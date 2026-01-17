@@ -28,7 +28,7 @@
       width: min(92vw, 840px);
       background: var(--paper);
       border-radius: 24px;
-      padding: 24px 28px 36px;
+      padding: 20px 28px 32px;
       box-shadow: 0 24px 50px rgba(17, 24, 39, 0.15);
       position: relative;
     }
@@ -36,9 +36,9 @@
     .panel-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-end;
       gap: 16px;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
 
     .lang-switcher {
@@ -85,7 +85,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 18px;
+      margin-bottom: 12px;
       font-size: 0.95rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -105,20 +105,19 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 14px;
-      padding: 8px 0 10px;
+      gap: 10px;
+      padding: 4px 0 8px;
     }
 
     .play-button {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 12px 26px;
+      width: 44px;
+      height: 44px;
       background: var(--overlay);
       color: #fff;
-      font-size: 0.95rem;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
+      font-size: 1.1rem;
       border: none;
       border-radius: 999px;
       cursor: pointer;
@@ -220,7 +219,6 @@
 <body>
   <div class="panel">
     <div class="panel-header">
-      <h1 class="section-title" data-i18n="section.keys">Πλήκτρα Πιάνου</h1>
       <div class="lang-switcher" role="group" aria-label="Επιλογή γλώσσας" data-i18n-attr="aria-label:aria.language">
         <button type="button" data-lang="el" class="active">Ελληνικά</button>
         <button type="button" data-lang="en">English</button>
@@ -232,7 +230,7 @@
       <select id="tetrachordSelect" aria-label="Επιλογή τετραχόρδου"></select>
     </div>
     <div class="clef-wrapper">
-      <button class="play-button" id="playButton" type="button" data-i18n="button.play">Αναπαραγωγή</button>
+      <button class="play-button" id="playButton" type="button" data-i18n="button.play">▶︎</button>
       <div class="keys-frame" aria-label="Πλήκτρα πιάνου από Ντο σε Ντο" data-i18n-attr="aria-label:aria.keys">
         <svg width="720" height="120" viewBox="0 0 720 120">
           <rect class="white-key" data-note="C" x="0" y="0" width="90" height="120" rx="10" />
@@ -262,7 +260,6 @@
       </div>
     </div>
 
-    <h2 class="section-title" data-i18n="section.staff">Πεντάγραμμο</h2>
     <svg width="760" height="170" viewBox="0 0 760 170" aria-label="Νότες στο πεντάγραμμο" data-i18n-attr="aria-label:aria.staff">
       <line class="staff-line" x1="40" y1="40" x2="720" y2="40" />
       <line class="staff-line" x1="40" y1="60" x2="720" y2="60" />
@@ -298,18 +295,14 @@
       <text class="label" x="422" y="155">F</text>
     </svg>
 
-    <div class="footer" data-i18n="footer.play">Πατήστε Αναπαραγωγή για να ακούσετε το επιλεγμένο τετράχορδο.</div>
   </div>
 
   <script>
     const translations = {
       el: {
         "site.title": "Ελληνικές Λαϊκές Κλίμακες",
-        "section.keys": "Πλήκτρα Πιάνου",
-        "section.staff": "Πεντάγραμμο",
         "label.tetrachord": "Τετράχορδο",
-        "button.play": "Αναπαραγωγή",
-        "footer.play": "Πατήστε Αναπαραγωγή για να ακούσετε το επιλεγμένο τετράχορδο.",
+        "button.play": "▶︎",
         "aria.keys": "Πλήκτρα πιάνου από Ντο σε Ντο",
         "aria.staff": "Νότες στο πεντάγραμμο",
         "aria.tetrachord": "Επιλογή τετραχόρδου",
@@ -319,11 +312,8 @@
       },
       en: {
         "site.title": "Greek Folk Scales",
-        "section.keys": "Piano Keys",
-        "section.staff": "Staff",
         "label.tetrachord": "Tetrachord",
-        "button.play": "Play",
-        "footer.play": "Click Play to hear the selected tetrachord.",
+        "button.play": "▶︎",
         "aria.keys": "Piano keys from C to C",
         "aria.staff": "Notes on the staff",
         "aria.tetrachord": "Select tetrachord",
