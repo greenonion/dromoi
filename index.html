@@ -114,6 +114,10 @@
       fill: #1f2933;
     }
 
+    .black-key.blue {
+      fill: #2f5f9e;
+    }
+
     .key-label {
       font-size: 12px;
       fill: #6b7280;
@@ -157,6 +161,11 @@
       letter-spacing: 0.06em;
       fill: #6b7280;
       text-transform: uppercase;
+    }
+
+    .accidental {
+      font-size: 18px;
+      fill: #111827;
     }
 
     .footer {
@@ -285,18 +294,26 @@
 
     const noteLabels = {
       C: "C",
-      Db: "Db",
+      Db: "D♭",
       D: "D",
-      Eb: "Eb",
+      Eb: "E♭",
       E: "E",
       F: "F",
-      Gb: "Gb",
+      Gb: "G♭",
       G: "G",
-      Ab: "Ab",
+      Ab: "A♭",
       A: "A",
-      Bb: "Bb",
+      Bb: "B♭",
       B: "B",
       C5: "C"
+    };
+
+    const accidentals = {
+      Db: "♭",
+      Eb: "♭",
+      Gb: "♭",
+      Ab: "♭",
+      Bb: "♭"
     };
 
     const tempoMs = 700;
@@ -373,6 +390,20 @@
         ellipse.setAttribute("cy", y.toString());
         stem.setAttribute("y1", y.toString());
         stem.setAttribute("y2", (y - 35).toString());
+
+        const existingAccidental = group.querySelector("text.accidental");
+        if (existingAccidental) {
+          existingAccidental.remove();
+        }
+        const accidental = accidentals[note];
+        if (accidental) {
+          const accText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          accText.classList.add("accidental");
+          accText.setAttribute("x", (ellipse.getAttribute("cx") - 22));
+          accText.setAttribute("y", (y + 6).toString());
+          accText.textContent = accidental;
+          group.insertBefore(accText, ellipse);
+        }
       });
 
       const labels = Array.from(document.querySelectorAll("svg text.label"));
