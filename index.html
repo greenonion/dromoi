@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simple Piano Notes</title>
+  <style>
+    :root {
+      --staff-line: #1f2933;
+      --note-blue: #7fb6ff;
+      --note-dark: #111827;
+      --paper: #f7f5f0;
+      --overlay: rgba(15, 23, 42, 0.75);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #fefcf8 0%, #f2ede3 45%, #e7dfd2 100%);
+      font-family: "Georgia", "Times New Roman", serif;
+      color: #111827;
+    }
+
+    .panel {
+      width: min(92vw, 840px);
+      background: var(--paper);
+      border-radius: 24px;
+      padding: 32px 28px 36px;
+      box-shadow: 0 24px 50px rgba(17, 24, 39, 0.15);
+      position: relative;
+    }
+
+    .section-title {
+      margin: 0 0 14px;
+      font-size: 1.1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .clef-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      padding: 8px 0 10px;
+    }
+
+    .play-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 26px;
+      background: var(--overlay);
+      color: #fff;
+      font-size: 0.95rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .play-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .play-button.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .keys-frame {
+      border-radius: 18px;
+      padding: 12px 14px;
+      background: #fefaf3;
+      box-shadow: inset 0 0 0 1px #e2d9c8;
+    }
+
+    .white-key {
+      fill: #fff;
+      stroke: #1f2933;
+      stroke-width: 1.6;
+    }
+
+    .white-key.blue {
+      fill: var(--note-blue);
+    }
+
+    .black-key {
+      fill: #1f2933;
+    }
+
+    .key-label {
+      font-size: 12px;
+      fill: #6b7280;
+    }
+
+    svg {
+      display: block;
+    }
+
+    .staff-line {
+      stroke: var(--staff-line);
+      stroke-width: 2.2;
+    }
+
+    .note {
+      fill: var(--note-dark);
+    }
+
+    .note-blue {
+      fill: var(--note-blue);
+    }
+
+    .stem {
+      stroke: var(--note-dark);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+    }
+
+    .stem-blue {
+      stroke: var(--note-blue);
+    }
+
+    .clef {
+      font-family: "Times New Roman", serif;
+      font-size: 86px;
+      fill: var(--staff-line);
+    }
+
+    .label {
+      font-size: 14px;
+      letter-spacing: 0.06em;
+      fill: #6b7280;
+      text-transform: uppercase;
+    }
+
+    .footer {
+      margin-top: 18px;
+      font-size: 0.95rem;
+      color: #4b5563;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h1 class="section-title">Piano Keys</h1>
+    <div class="clef-wrapper">
+      <button class="play-button" id="playButton" type="button">Play</button>
+      <div class="keys-frame" aria-label="Piano keys C to C">
+        <svg width="720" height="120" viewBox="0 0 720 120">
+          <rect class="white-key blue" x="0" y="0" width="90" height="120" rx="10" />
+          <rect class="white-key blue" x="90" y="0" width="90" height="120" rx="10" />
+          <rect class="white-key blue" x="180" y="0" width="90" height="120" rx="10" />
+          <rect class="white-key blue" x="270" y="0" width="90" height="120" rx="10" />
+          <rect class="white-key" x="360" y="0" width="90" height="120" rx="10" />
+          <rect class="white-key" x="450" y="0" width="90" height="120" rx="10" />
+          <rect class="white-key" x="540" y="0" width="90" height="120" rx="10" />
+          <rect class="white-key" x="630" y="0" width="90" height="120" rx="10" />
+
+          <rect class="black-key" x="62" y="0" width="56" height="70" rx="6" />
+          <rect class="black-key" x="152" y="0" width="56" height="70" rx="6" />
+          <rect class="black-key" x="332" y="0" width="56" height="70" rx="6" />
+          <rect class="black-key" x="422" y="0" width="56" height="70" rx="6" />
+          <rect class="black-key" x="512" y="0" width="56" height="70" rx="6" />
+
+          <text class="key-label" x="38" y="102">C</text>
+          <text class="key-label" x="128" y="102">D</text>
+          <text class="key-label" x="218" y="102">E</text>
+          <text class="key-label" x="308" y="102">F</text>
+          <text class="key-label" x="398" y="102">G</text>
+          <text class="key-label" x="488" y="102">A</text>
+          <text class="key-label" x="578" y="102">B</text>
+          <text class="key-label" x="668" y="102">C</text>
+        </svg>
+      </div>
+    </div>
+
+    <h2 class="section-title">Pentagram</h2>
+    <svg width="760" height="170" viewBox="0 0 760 170" aria-label="Pentagram C D E F quarter notes">
+      <line class="staff-line" x1="40" y1="40" x2="720" y2="40" />
+      <line class="staff-line" x1="40" y1="60" x2="720" y2="60" />
+      <line class="staff-line" x1="40" y1="80" x2="720" y2="80" />
+      <line class="staff-line" x1="40" y1="100" x2="720" y2="100" />
+      <line class="staff-line" x1="40" y1="120" x2="720" y2="120" />
+
+      <text class="clef" x="55" y="115">&#x1D11E;</text>
+
+      <ellipse class="note" cx="190" cy="130" rx="10" ry="7" />
+      <line class="stem" x1="200" y1="130" x2="200" y2="95" />
+
+      <ellipse class="note" cx="270" cy="125" rx="10" ry="7" />
+      <line class="stem" x1="280" y1="125" x2="280" y2="90" />
+
+      <ellipse class="note" cx="350" cy="120" rx="10" ry="7" />
+      <line class="stem" x1="360" y1="120" x2="360" y2="85" />
+
+      <ellipse class="note" cx="430" cy="115" rx="10" ry="7" />
+      <line class="stem" x1="440" y1="115" x2="440" y2="80" />
+
+      <text class="label" x="182" y="155">C</text>
+      <text class="label" x="262" y="155">D</text>
+      <text class="label" x="342" y="155">E</text>
+      <text class="label" x="422" y="155">F</text>
+    </svg>
+
+    <div class="footer">Click Play to hear C, D, E, F ascending and descending.</div>
+  </div>
+
+  <script>
+    const playButton = document.getElementById("playButton");
+    const notes = [
+      { name: "C4", freq: 261.63 },
+      { name: "D4", freq: 293.66 },
+      { name: "E4", freq: 329.63 },
+      { name: "F4", freq: 349.23 }
+    ];
+
+    const sequence = [...notes, ...notes.slice(0, -1).reverse()];
+    const tempoMs = 700;
+
+    let audioContext = null;
+
+    function playTone(freq, startTime, duration) {
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.3, startTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration + 0.05);
+    }
+
+    function playSequence() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      const now = audioContext.currentTime + 0.05;
+      sequence.forEach((note, index) => {
+        playTone(note.freq, now + (tempoMs / 1000) * index, tempoMs / 1000 * 0.8);
+      });
+    }
+
+    playButton.addEventListener("click", () => {
+      playButton.classList.add("hidden");
+      playSequence();
+      setTimeout(() => {
+        playButton.classList.remove("hidden");
+      }, tempoMs * sequence.length);
+    });
+  </script>
+</body>
+</html>
