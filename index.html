@@ -203,6 +203,13 @@
       text-transform: uppercase;
     }
 
+    .interval-label {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      fill: #6b7280;
+      text-transform: uppercase;
+    }
+
     .accidental {
       font-size: 18px;
       fill: #111827;
@@ -289,6 +296,10 @@
         <line class="stem" x1="440" y1="115" x2="440" y2="80" />
       </g>
 
+      <text class="interval-label" data-interval="0" x="230" y="155">T</text>
+      <text class="interval-label" data-interval="1" x="310" y="155">T</text>
+      <text class="interval-label" data-interval="2" x="390" y="155">T</text>
+
       <text class="label" x="182" y="155">C</text>
       <text class="label" x="262" y="155">D</text>
       <text class="label" x="342" y="155">E</text>
@@ -323,10 +334,24 @@
       }
     };
 
+    const intervalLabelsByLang = {
+      el: {
+        1: "Η",
+        2: "T",
+        3: "Τρ"
+      },
+      en: {
+        1: "S",
+        2: "T",
+        3: "m3"
+      }
+    };
+
     const playButton = document.getElementById("playButton");
     const select = document.getElementById("tetrachordSelect");
     const keyEls = Array.from(document.querySelectorAll(".white-key, .black-key"));
     const noteGroups = Array.from(document.querySelectorAll(".note-group"));
+    const intervalLabels = Array.from(document.querySelectorAll(".interval-label"));
     const langButtons = Array.from(document.querySelectorAll(".lang-switcher button"));
     const i18nElements = Array.from(document.querySelectorAll("[data-i18n]"));
     const i18nAttrElements = Array.from(document.querySelectorAll("[data-i18n-attr]"));
@@ -345,6 +370,27 @@
       Bb: 466.16,
       B: 493.88,
       C5: 523.25
+    };
+
+    const noteToSemitone = {
+      C: 0,
+      "C#": 1,
+      Db: 1,
+      D: 2,
+      "D#": 3,
+      Eb: 3,
+      E: 4,
+      F: 5,
+      "F#": 6,
+      Gb: 6,
+      G: 7,
+      "G#": 8,
+      Ab: 8,
+      A: 9,
+      "A#": 10,
+      Bb: 10,
+      B: 11,
+      C5: 12
     };
 
     const enharmonicAliases = {
@@ -438,6 +484,7 @@
       localStorage.setItem("lang", currentLang);
       applyTranslations(currentLang);
       buildDropdown();
+      updatePentagram(currentNotes);
     }
 
     function detectLanguage() {
@@ -544,6 +591,21 @@
       labels.forEach((label, index) => {
         const note = notes[index] || notes[notes.length - 1];
         label.textContent = noteLabels[note] || note;
+      });
+
+      const intervalMap = intervalLabelsByLang[currentLang] || intervalLabelsByLang.el;
+      intervalLabels.forEach((label, index) => {
+        const start = notes[index];
+        const end = notes[index + 1];
+        if (!start || !end) {
+          label.textContent = "";
+          return;
+        }
+        const startStep = noteToSemitone[enharmonicAliases[start] || start];
+        const endStep = noteToSemitone[enharmonicAliases[end] || end];
+        const diff = endStep - startStep;
+        const interval = diff < 0 ? diff + 12 : diff;
+        label.textContent = intervalMap[interval] || "";
       });
     }
 
