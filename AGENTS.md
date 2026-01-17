@@ -12,3 +12,4 @@
 ## Workflow
 - Keep changes small and focused.
 - Make atomic commits (one logical change per commit).
+- Run `script/verify` and confirm the tests page passes after changes.
