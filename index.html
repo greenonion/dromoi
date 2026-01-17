@@ -34,10 +34,30 @@
     }
 
     .section-title {
-      margin: 0 0 14px;
+      margin: 0 0 10px;
       font-size: 1.1rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
+    }
+
+    .selector {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      font-size: 0.95rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #4b5563;
+    }
+
+    .selector select {
+      font-size: 1rem;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid #d6cbb8;
+      background: #fffdf8;
+      font-family: "Georgia", "Times New Roman", serif;
     }
 
     .clef-wrapper {
@@ -149,25 +169,30 @@
 </head>
 <body>
   <div class="panel">
+    <div class="selector">
+      <label for="tetrachordSelect">Tetrachord</label>
+      <select id="tetrachordSelect" aria-label="Select tetrachord"></select>
+    </div>
+
     <h1 class="section-title">Piano Keys</h1>
     <div class="clef-wrapper">
       <button class="play-button" id="playButton" type="button">Play</button>
       <div class="keys-frame" aria-label="Piano keys C to C">
         <svg width="720" height="120" viewBox="0 0 720 120">
-          <rect class="white-key blue" x="0" y="0" width="90" height="120" rx="10" />
-          <rect class="white-key blue" x="90" y="0" width="90" height="120" rx="10" />
-          <rect class="white-key blue" x="180" y="0" width="90" height="120" rx="10" />
-          <rect class="white-key blue" x="270" y="0" width="90" height="120" rx="10" />
-          <rect class="white-key" x="360" y="0" width="90" height="120" rx="10" />
-          <rect class="white-key" x="450" y="0" width="90" height="120" rx="10" />
-          <rect class="white-key" x="540" y="0" width="90" height="120" rx="10" />
-          <rect class="white-key" x="630" y="0" width="90" height="120" rx="10" />
+          <rect class="white-key" data-note="C" x="0" y="0" width="90" height="120" rx="10" />
+          <rect class="white-key" data-note="D" x="90" y="0" width="90" height="120" rx="10" />
+          <rect class="white-key" data-note="E" x="180" y="0" width="90" height="120" rx="10" />
+          <rect class="white-key" data-note="F" x="270" y="0" width="90" height="120" rx="10" />
+          <rect class="white-key" data-note="G" x="360" y="0" width="90" height="120" rx="10" />
+          <rect class="white-key" data-note="A" x="450" y="0" width="90" height="120" rx="10" />
+          <rect class="white-key" data-note="B" x="540" y="0" width="90" height="120" rx="10" />
+          <rect class="white-key" data-note="C5" x="630" y="0" width="90" height="120" rx="10" />
 
-          <rect class="black-key" x="62" y="0" width="56" height="70" rx="6" />
-          <rect class="black-key" x="152" y="0" width="56" height="70" rx="6" />
-          <rect class="black-key" x="332" y="0" width="56" height="70" rx="6" />
-          <rect class="black-key" x="422" y="0" width="56" height="70" rx="6" />
-          <rect class="black-key" x="512" y="0" width="56" height="70" rx="6" />
+          <rect class="black-key" data-note="Db" x="62" y="0" width="56" height="70" rx="6" />
+          <rect class="black-key" data-note="Eb" x="152" y="0" width="56" height="70" rx="6" />
+          <rect class="black-key" data-note="Gb" x="332" y="0" width="56" height="70" rx="6" />
+          <rect class="black-key" data-note="Ab" x="422" y="0" width="56" height="70" rx="6" />
+          <rect class="black-key" data-note="Bb" x="512" y="0" width="56" height="70" rx="6" />
 
           <text class="key-label" x="38" y="102">C</text>
           <text class="key-label" x="128" y="102">D</text>
@@ -182,7 +207,7 @@
     </div>
 
     <h2 class="section-title">Pentagram</h2>
-    <svg width="760" height="170" viewBox="0 0 760 170" aria-label="Pentagram C D E F quarter notes">
+    <svg width="760" height="170" viewBox="0 0 760 170" aria-label="Pentagram notes">
       <line class="staff-line" x1="40" y1="40" x2="720" y2="40" />
       <line class="staff-line" x1="40" y1="60" x2="720" y2="60" />
       <line class="staff-line" x1="40" y1="80" x2="720" y2="80" />
@@ -191,17 +216,25 @@
 
       <text class="clef" x="55" y="115">&#x1D11E;</text>
 
-      <ellipse class="note" cx="190" cy="130" rx="10" ry="7" />
-      <line class="stem" x1="200" y1="130" x2="200" y2="95" />
+      <g class="note-group" data-note="C">
+        <ellipse class="note" cx="190" cy="130" rx="10" ry="7" />
+        <line class="stem" x1="200" y1="130" x2="200" y2="95" />
+      </g>
 
-      <ellipse class="note" cx="270" cy="125" rx="10" ry="7" />
-      <line class="stem" x1="280" y1="125" x2="280" y2="90" />
+      <g class="note-group" data-note="D">
+        <ellipse class="note" cx="270" cy="125" rx="10" ry="7" />
+        <line class="stem" x1="280" y1="125" x2="280" y2="90" />
+      </g>
 
-      <ellipse class="note" cx="350" cy="120" rx="10" ry="7" />
-      <line class="stem" x1="360" y1="120" x2="360" y2="85" />
+      <g class="note-group" data-note="E">
+        <ellipse class="note" cx="350" cy="120" rx="10" ry="7" />
+        <line class="stem" x1="360" y1="120" x2="360" y2="85" />
+      </g>
 
-      <ellipse class="note" cx="430" cy="115" rx="10" ry="7" />
-      <line class="stem" x1="440" y1="115" x2="440" y2="80" />
+      <g class="note-group" data-note="F">
+        <ellipse class="note" cx="430" cy="115" rx="10" ry="7" />
+        <line class="stem" x1="440" y1="115" x2="440" y2="80" />
+      </g>
 
       <text class="label" x="182" y="155">C</text>
       <text class="label" x="262" y="155">D</text>
@@ -209,22 +242,152 @@
       <text class="label" x="422" y="155">F</text>
     </svg>
 
-    <div class="footer">Click Play to hear C, D, E, F ascending and descending.</div>
+    <div class="footer">Click Play to hear the selected tetrachord.</div>
   </div>
 
   <script>
     const playButton = document.getElementById("playButton");
-    const notes = [
-      { name: "C4", freq: 261.63 },
-      { name: "D4", freq: 293.66 },
-      { name: "E4", freq: 329.63 },
-      { name: "F4", freq: 349.23 }
-    ];
+    const select = document.getElementById("tetrachordSelect");
+    const keyEls = Array.from(document.querySelectorAll(".white-key, .black-key"));
+    const noteGroups = Array.from(document.querySelectorAll(".note-group"));
 
-    const sequence = [...notes, ...notes.slice(0, -1).reverse()];
+    const baseFrequencies = {
+      C: 261.63,
+      Db: 277.18,
+      D: 293.66,
+      Eb: 311.13,
+      E: 329.63,
+      F: 349.23,
+      Gb: 369.99,
+      G: 392.0,
+      Ab: 415.3,
+      A: 440.0,
+      Bb: 466.16,
+      B: 493.88,
+      C5: 523.25
+    };
+
+    const staffPositions = {
+      C: 130,
+      Db: 127,
+      D: 125,
+      Eb: 122,
+      E: 120,
+      F: 115,
+      Gb: 112,
+      G: 110,
+      Ab: 107,
+      A: 105,
+      Bb: 102,
+      B: 100,
+      C5: 95
+    };
+
+    const noteLabels = {
+      C: "C",
+      Db: "Db",
+      D: "D",
+      Eb: "Eb",
+      E: "E",
+      F: "F",
+      Gb: "Gb",
+      G: "G",
+      Ab: "Ab",
+      A: "A",
+      Bb: "Bb",
+      B: "B",
+      C5: "C"
+    };
+
     const tempoMs = 700;
-
     let audioContext = null;
+    let tetrachords = [];
+    let currentNotes = [];
+
+    function parseYaml(text) {
+      const lines = text.split(/\r?\n/);
+      const items = [];
+      let current = null;
+      lines.forEach((line) => {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith("#")) {
+          return;
+        }
+        if (trimmed.startsWith("-")) {
+          if (current) {
+            items.push(current);
+          }
+          current = { name: "", notes: [] };
+          const nameMatch = trimmed.match(/-\s*name:\s*(.+)/);
+          if (nameMatch) {
+            current.name = nameMatch[1].trim();
+          }
+          return;
+        }
+        if (!current) {
+          return;
+        }
+        if (trimmed.startsWith("name:")) {
+          current.name = trimmed.replace("name:", "").trim();
+        } else if (trimmed.startsWith("notes:")) {
+          const listMatch = trimmed.match(/notes:\s*\[(.+)\]/);
+          if (listMatch) {
+            current.notes = listMatch[1].split(",").map((note) => note.trim());
+          }
+        } else if (trimmed.startsWith("-") && current.notes) {
+          current.notes.push(trimmed.replace("-", "").trim());
+        }
+      });
+      if (current) {
+        items.push(current);
+      }
+      return items;
+    }
+
+    function buildDropdown() {
+      select.innerHTML = "";
+      tetrachords.forEach((tet, index) => {
+        const option = document.createElement("option");
+        option.value = index.toString();
+        option.textContent = tet.name;
+        select.appendChild(option);
+      });
+    }
+
+    function setKeyHighlights(notes) {
+      keyEls.forEach((el) => {
+        if (notes.includes(el.dataset.note)) {
+          el.classList.add("blue");
+        } else {
+          el.classList.remove("blue");
+        }
+      });
+    }
+
+    function updatePentagram(notes) {
+      noteGroups.forEach((group, index) => {
+        const note = notes[index] || notes[notes.length - 1];
+        const y = staffPositions[note] ?? 120;
+        const ellipse = group.querySelector("ellipse");
+        const stem = group.querySelector("line");
+        ellipse.setAttribute("cy", y.toString());
+        stem.setAttribute("y1", y.toString());
+        stem.setAttribute("y2", (y - 35).toString());
+      });
+
+      const labels = Array.from(document.querySelectorAll("svg text.label"));
+      labels.forEach((label, index) => {
+        const note = notes[index] || notes[notes.length - 1];
+        label.textContent = noteLabels[note] || note;
+      });
+    }
+
+    function updateSequence() {
+      const selected = tetrachords[Number(select.value)] || tetrachords[0];
+      currentNotes = selected.notes.slice();
+      setKeyHighlights(currentNotes);
+      updatePentagram(currentNotes);
+    }
 
     function playTone(freq, startTime, duration) {
       const oscillator = audioContext.createOscillator();
@@ -244,19 +407,38 @@
       if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
       }
+      const noteSequence = [...currentNotes, ...currentNotes.slice(0, -1).reverse()];
       const now = audioContext.currentTime + 0.05;
-      sequence.forEach((note, index) => {
-        playTone(note.freq, now + (tempoMs / 1000) * index, tempoMs / 1000 * 0.8);
+      noteSequence.forEach((note, index) => {
+        const freq = baseFrequencies[note];
+        if (!freq) {
+          return;
+        }
+        playTone(freq, now + (tempoMs / 1000) * index, tempoMs / 1000 * 0.8);
       });
+      return noteSequence.length;
     }
+
+    async function loadTetrachords() {
+      const response = await fetch("tetrachords.yml");
+      const text = await response.text();
+      tetrachords = parseYaml(text);
+      buildDropdown();
+      select.value = "0";
+      updateSequence();
+    }
+
+    select.addEventListener("change", updateSequence);
 
     playButton.addEventListener("click", () => {
       playButton.classList.add("hidden");
-      playSequence();
+      const length = playSequence();
       setTimeout(() => {
         playButton.classList.remove("hidden");
-      }, tempoMs * sequence.length);
+      }, tempoMs * length);
     });
+
+    loadTetrachords();
   </script>
 </body>
 </html>
