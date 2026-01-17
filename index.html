@@ -276,6 +276,11 @@
       C5: 523.25
     };
 
+    const enharmonicAliases = {
+      "F#": "Gb",
+      "E#": "F"
+    };
+
     const staffPositions = {
       C: 130,
       Db: 127,
@@ -299,12 +304,14 @@
       Eb: "E♭",
       E: "E",
       F: "F",
+      "F#": "F♯",
       Gb: "G♭",
       G: "G",
       Ab: "A♭",
       A: "A",
       Bb: "B♭",
       B: "B",
+      "E#": "E♯",
       C5: "C"
     };
 
@@ -313,7 +320,9 @@
       Eb: "♭",
       Gb: "♭",
       Ab: "♭",
-      Bb: "♭"
+      Bb: "♭",
+      "F#": "♯",
+      "E#": "♯"
     };
 
     const tempoMs = 700;
@@ -373,7 +382,11 @@
 
     function setKeyHighlights(notes) {
       keyEls.forEach((el) => {
-        if (notes.includes(el.dataset.note)) {
+        const keyNote = el.dataset.note;
+        const shouldHighlight = notes.some(
+          (note) => note === keyNote || enharmonicAliases[note] === keyNote
+        );
+        if (shouldHighlight) {
           el.classList.add("blue");
         } else {
           el.classList.remove("blue");
@@ -384,7 +397,8 @@
     function updatePentagram(notes) {
       noteGroups.forEach((group, index) => {
         const note = notes[index] || notes[notes.length - 1];
-        const y = staffPositions[note] ?? 120;
+        const baseNote = enharmonicAliases[note] || note;
+        const y = staffPositions[baseNote] ?? 120;
         const ellipse = group.querySelector("ellipse");
         const stem = group.querySelector("line");
         ellipse.setAttribute("cy", y.toString());
@@ -441,7 +455,8 @@
       const noteSequence = [...currentNotes, ...currentNotes.slice(0, -1).reverse()];
       const now = audioContext.currentTime + 0.05;
       noteSequence.forEach((note, index) => {
-        const freq = baseFrequencies[note];
+        const baseNote = enharmonicAliases[note] || note;
+        const freq = baseFrequencies[baseNote];
         if (!freq) {
           return;
         }
