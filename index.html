@@ -161,6 +161,16 @@
     .key-label {
       font-size: 12px;
       fill: #6b7280;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .key-label.black {
+      fill: #fefaf3;
+    }
+
+    .key-label.active {
+      opacity: 1;
     }
 
     svg {
@@ -263,6 +273,12 @@
           <text class="key-label" x="488" y="102">A</text>
           <text class="key-label" x="578" y="102">B</text>
           <text class="key-label" x="668" y="102">C</text>
+
+          <text class="key-label black" x="90" y="52">D♭</text>
+          <text class="key-label black" x="180" y="52">E♭</text>
+          <text class="key-label black" x="360" y="52">G♭</text>
+          <text class="key-label black" x="450" y="52">A♭</text>
+          <text class="key-label black" x="540" y="52">B♭</text>
         </svg>
       </div>
     </div>
@@ -300,10 +316,6 @@
       <text class="interval-label" data-interval="1" x="310" y="155">T</text>
       <text class="interval-label" data-interval="2" x="390" y="155">T</text>
 
-      <text class="label" x="182" y="155">C</text>
-      <text class="label" x="262" y="155">D</text>
-      <text class="label" x="342" y="155">E</text>
-      <text class="label" x="422" y="155">F</text>
     </svg>
 
   </div>
@@ -352,6 +364,7 @@
     const keyEls = Array.from(document.querySelectorAll(".white-key, .black-key"));
     const noteGroups = Array.from(document.querySelectorAll(".note-group"));
     const intervalLabels = Array.from(document.querySelectorAll(".interval-label"));
+    const keyLabels = Array.from(document.querySelectorAll(".key-label"));
     const langButtons = Array.from(document.querySelectorAll(".lang-switcher button"));
     const i18nElements = Array.from(document.querySelectorAll("[data-i18n]"));
     const i18nAttrElements = Array.from(document.querySelectorAll("[data-i18n-attr]"));
@@ -548,16 +561,22 @@
     }
 
     function setKeyHighlights(notes) {
-      keyEls.forEach((el) => {
-        const keyNote = el.dataset.note;
-        const shouldHighlight = notes.some(
-          (note) => note === keyNote || enharmonicAliases[note] === keyNote
-        );
-        if (shouldHighlight) {
-          el.classList.add("blue");
-        } else {
-          el.classList.remove("blue");
-        }
+      keyEls.forEach((key) => {
+        const keyNote = key.dataset.note;
+        const shouldHighlight = notes.some((note) => {
+          const normalized = enharmonicAliases[note] || note;
+          return normalized === keyNote || (keyNote === "C5" && normalized === "C");
+        });
+        key.classList.toggle("blue", shouldHighlight);
+      });
+
+      keyLabels.forEach((label) => {
+        const labelNote = label.textContent.trim();
+        const shouldShow = notes.some((note) => {
+          const normalized = enharmonicAliases[note] || note;
+          return normalized === labelNote || noteLabels[normalized] === labelNote;
+        });
+        label.classList.toggle("active", shouldShow);
       });
     }
 
@@ -585,12 +604,6 @@
           accText.textContent = accidental;
           group.insertBefore(accText, ellipse);
         }
-      });
-
-      const labels = Array.from(document.querySelectorAll("svg text.label"));
-      labels.forEach((label, index) => {
-        const note = notes[index] || notes[notes.length - 1];
-        label.textContent = noteLabels[note] || note;
       });
 
       const intervalMap = intervalLabelsByLang[currentLang] || intervalLabelsByLang.el;
