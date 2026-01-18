@@ -44,7 +44,6 @@ const intervalLabelsByLang = {
 const playButton = document.getElementById("playButton");
 const select = document.getElementById("tetrachordSelect");
 const keyEls = Array.from(document.querySelectorAll(".white-key, .black-key"));
-const intervalLabels = Array.from(document.querySelectorAll(".interval-label"));
 const keyLabels = Array.from(document.querySelectorAll(".key-label"));
 const langButtons = Array.from(document.querySelectorAll(".lang-switcher button"));
 const i18nElements = Array.from(document.querySelectorAll("[data-i18n]"));
@@ -230,11 +229,12 @@ function renderStaff(notes) {
   stave.setContext(context).draw();
 
   const staveNotes = createStaveNotes(notes);
-  const voice = new Voice({ num_beats: staveNotes.length, beat_value: 4 });
-  voice.addTickables(staveNotes);
+  const mainVoice = new Voice({ num_beats: staveNotes.length, beat_value: 4 });
+  mainVoice.addTickables(staveNotes);
 
-  new Formatter().joinVoices([voice]).format([voice], 440);
-  voice.draw(context, stave);
+  new Formatter().joinVoices([mainVoice]).format([mainVoice], 440);
+  mainVoice.draw(context, stave);
+
 
   context.setFillStyle("#111827");
   context.setStrokeStyle("#1f2933");
@@ -249,17 +249,6 @@ function renderStaff(notes) {
 function updatePentagram(notes) {
   renderStaff(notes);
 
-  const intervalMap = intervalLabelsByLang[currentLang] || intervalLabelsByLang.el;
-  intervalLabels.forEach((label, index) => {
-    const start = notes[index];
-    const end = notes[index + 1];
-    const interval = intervalInSemitones(start, end, enharmonicAliases);
-    if (!interval) {
-      label.textContent = "";
-      return;
-    }
-    label.textContent = intervalMap[interval] || "";
-  });
 }
 
 function updateSequence() {
@@ -324,6 +313,7 @@ playButton.addEventListener("click", () => {
     playButton.classList.remove("hidden");
   }, tempoMs * length);
 });
+
 
 currentLang = detectLanguage();
 applyTranslations(currentLang);
