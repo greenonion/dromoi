@@ -32,14 +32,14 @@ const translations = {
 
 const intervalLabelsByLang = {
   el: {
-    1: "S",
+    1: "Η",
     2: "T",
-    3: "3m"
+    3: "Τρ"
   },
   en: {
     1: "S",
     2: "T",
-    3: "3m"
+    3: "m3"
   }
 };
 
@@ -51,7 +51,6 @@ const langButtons = Array.from(document.querySelectorAll(".lang-switcher button"
 const i18nElements = Array.from(document.querySelectorAll("[data-i18n]"));
 const i18nAttrElements = Array.from(document.querySelectorAll("[data-i18n-attr]"));
 const staffWrapper = document.getElementById("staff");
-const intervalsWrapper = document.getElementById("intervals");
 
 const baseFrequencies = {
   C: 261.63,
@@ -219,12 +218,12 @@ function createStaveNotes(notes) {
 
 function renderStaff(notes) {
   if (!staffWrapper) {
-    return;
+    return null;
   }
   staffWrapper.innerHTML = "";
 
   const renderer = new Renderer(staffWrapper, Renderer.Backends.SVG);
-  renderer.resize(760, 190);
+  renderer.resize(760, 230);
   const context = renderer.getContext();
 
   const stave = new Stave(40, 40, 680);
@@ -238,6 +237,7 @@ function renderStaff(notes) {
   new Formatter().joinVoices([mainVoice]).format([mainVoice], 440);
   mainVoice.draw(context, stave);
 
+  renderIntervals(notes, { stave, mainVoice, context });
 
   context.setFillStyle("#111827");
   context.setStrokeStyle("#1f2933");
@@ -247,34 +247,41 @@ function renderStaff(notes) {
     svg.setAttribute("aria-label", translations[currentLang]?.["aria.staff"] || "Notes on the staff");
   }
 
+  return { stave, mainVoice, context };
 }
 
-function renderIntervals(notes) {
-  if (!intervalsWrapper) {
+function renderIntervals(notes, metrics) {
+  if (!notes || notes.length < 2 || !metrics) {
     return;
   }
-  intervalsWrapper.innerHTML = "";
-  if (!notes || notes.length < 2) {
-    return;
-  }
+  const { mainVoice, context } = metrics;
+  const tickables = mainVoice.getTickables();
   const labels = intervalLabelsByLang[currentLang] || intervalLabelsByLang.el;
-  notes.slice(0, -1).forEach((note, index) => {
-    const nextNote = notes[index + 1];
-    const diff = intervalInSemitones(note, nextNote, enharmonicAliases);
-    if (diff == null) {
+  const intervalY = 190;
+  const intervalYOffset = -36;
+  const intervalXOffset = 90;
+  context.save();
+  context.setFont("14px Georgia, Times New Roman, serif", "");
+  context.setFillStyle("#4b5563");
+  tickables.slice(0, -1).forEach((tickable, index) => {
+    const nextTickable = tickables[index + 1];
+    const diff = intervalInSemitones(notes[index], notes[index + 1], enharmonicAliases);
+    const tickContext = tickable?.getTickContext?.();
+    const nextContext = nextTickable?.getTickContext?.();
+    const tickableX = tickContext?.getX?.();
+    const nextX = nextContext?.getX?.();
+    if (diff == null || !Number.isFinite(tickableX) || !Number.isFinite(nextX)) {
       return;
     }
     const label = labels[diff] || `${diff}`;
-    const chip = document.createElement("span");
-    chip.className = "interval-chip";
-    chip.textContent = label;
-    intervalsWrapper.appendChild(chip);
+    const midX = (tickableX + nextX) / 2 + intervalXOffset;
+    context.fillText(label, midX - 6, intervalY + intervalYOffset);
   });
+  context.restore();
 }
 
 function updatePentagram(notes) {
   renderStaff(notes);
-  renderIntervals(notes);
 }
 
 function updateSequence() {
