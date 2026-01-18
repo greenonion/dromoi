@@ -1,11 +1,14 @@
 import { serve } from "bun";
-import { access, stat } from "node:fs/promises";
+import { watch } from "node:fs";
+import { access, copyFile, stat } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const port = Number(process.env.PORT || 8000);
 const root = fileURLToPath(new URL(".", import.meta.url));
 const distRoot = join(root, "dist");
+const tetrachordsSource = join(root, "tetrachords.yml");
+const tetrachordsDest = join(distRoot, "tetrachords.yml");
 
 const contentTypes = {
   ".css": "text/css",
@@ -17,12 +20,27 @@ const contentTypes = {
   ".yaml": "text/yaml"
 };
 
+async function copyTetrachords() {
+  try {
+    await copyFile(tetrachordsSource, tetrachordsDest);
+  } catch (error) {
+    console.warn("Failed to copy tetrachords.yml", error);
+  }
+}
+
 const buildProcess = Bun.spawn(
   ["bun", "build", "index.html", "--outdir", "dist", "--minify", "--watch"],
   { stdout: "inherit", stderr: "inherit" }
 );
 
+await copyTetrachords();
+
+const tetrachordsWatcher = watch(tetrachordsSource, { persistent: true }, () => {
+  copyTetrachords();
+});
+
 process.on("SIGINT", () => {
+  tetrachordsWatcher.close();
   buildProcess.kill();
   process.exit(0);
 });

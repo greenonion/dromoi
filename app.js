@@ -14,7 +14,8 @@ const translations = {
     "aria.tetrachord": "Επιλογή τετραχόρδου",
     "aria.language": "Επιλογή γλώσσας",
     "lang.el": "Ελληνικά",
-    "lang.en": "English"
+    "lang.en": "English",
+    "status.tetrachords": "Αδυναμία φόρτωσης τετραχόρδων"
   },
   en: {
     "site.title": "Greek Folk Scales",
@@ -26,7 +27,8 @@ const translations = {
     "aria.tetrachord": "Select tetrachord",
     "aria.language": "Language picker",
     "lang.el": "Greek",
-    "lang.en": "English"
+    "lang.en": "English",
+    "status.tetrachords": "Unable to load tetrachords"
   }
 };
 
@@ -45,6 +47,7 @@ const intervalLabelsByLang = {
 
 const playButton = document.getElementById("playButton");
 const select = document.getElementById("tetrachordSelect");
+const statusMessage = document.getElementById("statusMessage");
 const keyEls = Array.from(document.querySelectorAll(".white-key, .black-key"));
 const keyLabels = Array.from(document.querySelectorAll(".key-label"));
 const langButtons = Array.from(document.querySelectorAll(".lang-switcher button"));
@@ -101,11 +104,36 @@ const accidentals = {
   "E#": "#"
 };
 
-const tempoMs = 700;
+const tempoBpm = 110;
+const tempoMs = 60000 / tempoBpm;
 let audioContext = null;
+let masterGain = null;
+let dryGain = null;
+let wetGain = null;
+let reverbNode = null;
 let tetrachords = [];
 let currentNotes = [];
 let currentLang = "el";
+const sampleUrls = {
+  C3: "https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts@master/FluidR3_GM/acoustic_grand_piano-mp3/C3.mp3",
+  F3: "https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts@master/FluidR3_GM/acoustic_grand_piano-mp3/F3.mp3",
+  A3: "https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts@master/FluidR3_GM/acoustic_grand_piano-mp3/A3.mp3",
+  C4: "https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts@master/FluidR3_GM/acoustic_grand_piano-mp3/C4.mp3",
+  F4: "https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts@master/FluidR3_GM/acoustic_grand_piano-mp3/F4.mp3",
+  A4: "https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts@master/FluidR3_GM/acoustic_grand_piano-mp3/A4.mp3",
+  C5: "https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts@master/FluidR3_GM/acoustic_grand_piano-mp3/C5.mp3"
+};
+const sampleFrequencies = {
+  C3: 130.81,
+  F3: 174.61,
+  A3: 220.0,
+  C4: 261.63,
+  F4: 349.23,
+  A4: 440.0,
+  C5: 523.25
+};
+const sampleBuffers = new Map();
+let sampleLoadPromise = null;
 
 function applyTranslations(lang) {
   const strings = translations[lang] || translations.el;
@@ -132,6 +160,9 @@ function applyTranslations(lang) {
       button.textContent = strings[labelKey];
     }
   });
+  if (statusMessage?.classList.contains("active")) {
+    statusMessage.textContent = strings["status.tetrachords"];
+  }
   document.documentElement.lang = lang;
   if (strings["site.title"]) {
     document.title = strings["site.title"];
@@ -164,6 +195,7 @@ function buildDropdown() {
   });
   const strings = translations[currentLang] || translations.el;
   select.setAttribute("aria-label", strings["aria.tetrachord"] || "Select tetrachord");
+  select.disabled = tetrachords.length === 0;
 }
 
 function setKeyHighlights(notes) {
@@ -221,6 +253,10 @@ function renderStaff(notes) {
     return null;
   }
   staffWrapper.innerHTML = "";
+
+  if (!notes || notes.length === 0) {
+    return null;
+  }
 
   const renderer = new Renderer(staffWrapper, Renderer.Backends.SVG);
   renderer.resize(760, 230);
@@ -284,31 +320,170 @@ function updatePentagram(notes) {
   renderStaff(notes);
 }
 
+function setLoadError(hasError) {
+  if (!statusMessage) {
+    return;
+  }
+  const strings = translations[currentLang] || translations.el;
+  statusMessage.textContent = strings["status.tetrachords"] || "Unable to load tetrachords";
+  statusMessage.classList.toggle("active", hasError);
+  playButton.disabled = hasError;
+  playButton.setAttribute("aria-disabled", hasError ? "true" : "false");
+}
+
 function updateSequence() {
+  if (!tetrachords.length) {
+    currentNotes = [];
+    setKeyHighlights(currentNotes);
+    updatePentagram(currentNotes);
+    return;
+  }
   const selected = tetrachords[Number(select.value)] || tetrachords[0];
+  if (!selected || !Array.isArray(selected.notes)) {
+    return;
+  }
   currentNotes = selected.notes.slice();
   setKeyHighlights(currentNotes);
   updatePentagram(currentNotes);
 }
 
 function playTone(freq, startTime, duration) {
-  const oscillator = audioContext.createOscillator();
+  if (sampleBuffers.size > 0) {
+    playSampleTone(freq, startTime, duration);
+    return;
+  }
+  const oscPrimary = audioContext.createOscillator();
+  const oscHarmonic = audioContext.createOscillator();
   const gain = audioContext.createGain();
-  oscillator.type = "sine";
-  oscillator.frequency.value = freq;
+  const filter = audioContext.createBiquadFilter();
+
+  oscPrimary.type = "triangle";
+  oscPrimary.frequency.value = freq;
+  const detuneDrift = (Math.random() - 0.5) * 6;
+  oscPrimary.detune.value = -6 + detuneDrift;
+
+  oscHarmonic.type = "sine";
+  oscHarmonic.frequency.value = freq * 2;
+  oscHarmonic.detune.value = 3 + detuneDrift;
+
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(Math.min(3000, freq * 4.6), startTime);
+  filter.Q.setValueAtTime(0.65, startTime);
+
   gain.gain.setValueAtTime(0.0001, startTime);
-  gain.gain.exponentialRampToValueAtTime(0.3, startTime + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.6, startTime + 0.014);
+  gain.gain.exponentialRampToValueAtTime(0.2, startTime + duration * 0.5);
   gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-  oscillator.connect(gain);
-  gain.connect(audioContext.destination);
-  oscillator.start(startTime);
-  oscillator.stop(startTime + duration + 0.05);
+
+  oscPrimary.connect(filter);
+  oscHarmonic.connect(filter);
+  filter.connect(gain);
+  gain.connect(dryGain);
+  gain.connect(wetGain);
+
+  oscPrimary.start(startTime);
+  oscHarmonic.start(startTime);
+  const stopTime = startTime + duration + 0.14;
+  oscPrimary.stop(stopTime);
+  oscHarmonic.stop(stopTime);
 }
 
-function playSequence() {
+function playSampleTone(freq, startTime, duration) {
+  const sampleKey = pickSampleKey(freq);
+  const buffer = sampleBuffers.get(sampleKey);
+  if (!buffer) {
+    return;
+  }
+  const source = audioContext.createBufferSource();
+  const filter = audioContext.createBiquadFilter();
+  const gain = audioContext.createGain();
+  source.buffer = buffer;
+  source.playbackRate.value = freq / sampleFrequencies[sampleKey];
+
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(Math.min(2500, freq * 3.6), startTime);
+  filter.Q.setValueAtTime(0.45, startTime);
+
+  gain.gain.setValueAtTime(0.0001, startTime);
+  gain.gain.exponentialRampToValueAtTime(0.85, startTime + 0.04);
+  gain.gain.exponentialRampToValueAtTime(0.4, startTime + duration * 0.7);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration + 0.08);
+
+  source.connect(filter);
+  filter.connect(gain);
+  gain.connect(dryGain);
+  gain.connect(wetGain);
+  source.start(startTime);
+  source.stop(startTime + duration + 0.35);
+}
+
+function pickSampleKey(freq) {
+  let closestKey = "C4";
+  let closestDiff = Infinity;
+  Object.entries(sampleFrequencies).forEach(([key, sampleFreq]) => {
+    const diff = Math.abs(freq - sampleFreq);
+    if (diff < closestDiff) {
+      closestDiff = diff;
+      closestKey = key;
+    }
+  });
+  return closestKey;
+}
+
+async function loadSamples() {
+  if (sampleLoadPromise) {
+    return sampleLoadPromise;
+  }
+  sampleLoadPromise = Promise.all(
+    Object.entries(sampleUrls).map(async ([key, url]) => {
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = await audioContext.decodeAudioData(arrayBuffer);
+      sampleBuffers.set(key, buffer);
+    })
+  ).catch((error) => {
+    console.warn("Sample loading failed, using synth fallback.", error);
+  });
+  return sampleLoadPromise;
+}
+
+function buildReverbImpulse(context, duration, decay) {
+  const sampleRate = context.sampleRate;
+  const length = Math.floor(sampleRate * duration);
+  const impulse = context.createBuffer(2, length, sampleRate);
+  for (let channel = 0; channel < impulse.numberOfChannels; channel += 1) {
+    const data = impulse.getChannelData(channel);
+    for (let i = 0; i < length; i += 1) {
+      const t = i / length;
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, decay);
+    }
+  }
+  return impulse;
+}
+
+async function playSequence() {
   if (!audioContext) {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
   }
+  if (!masterGain) {
+    masterGain = audioContext.createGain();
+    masterGain.gain.value = 0.9;
+
+    dryGain = audioContext.createGain();
+    dryGain.gain.value = 0.72;
+
+    wetGain = audioContext.createGain();
+    wetGain.gain.value = 0.38;
+
+    reverbNode = audioContext.createConvolver();
+    reverbNode.buffer = buildReverbImpulse(audioContext, 1.9, 2.8);
+
+    dryGain.connect(masterGain);
+    wetGain.connect(reverbNode);
+    reverbNode.connect(masterGain);
+    masterGain.connect(audioContext.destination);
+  }
+  await loadSamples();
   const noteSequence = [...currentNotes, ...currentNotes.slice(0, -1).reverse()];
   const now = audioContext.currentTime + 0.05;
   noteSequence.forEach((note, index) => {
@@ -323,12 +498,27 @@ function playSequence() {
 }
 
 async function loadTetrachords() {
-  const response = await fetch("tetrachords.yml");
-  const text = await response.text();
-  tetrachords = parseTetrachordsYaml(text);
-  buildDropdown();
-  select.value = "0";
-  updateSequence();
+  try {
+    const response = await fetch("tetrachords.yml");
+    if (!response.ok) {
+      throw new Error(`Failed to load tetrachords: ${response.status}`);
+    }
+    const text = await response.text();
+    tetrachords = parseTetrachordsYaml(text);
+    buildDropdown();
+    if (!tetrachords.length) {
+      throw new Error("Tetrachords list empty");
+    }
+    select.value = "0";
+    updateSequence();
+    setLoadError(false);
+  } catch (error) {
+    console.warn("Tetrachords load failed", error);
+    tetrachords = [];
+    buildDropdown();
+    updateSequence();
+    setLoadError(true);
+  }
 }
 
 select.addEventListener("change", updateSequence);
@@ -339,9 +529,9 @@ langButtons.forEach((button) => {
   });
 });
 
-playButton.addEventListener("click", () => {
+playButton.addEventListener("click", async () => {
   playButton.classList.add("hidden");
-  const length = playSequence();
+  const length = await playSequence();
   setTimeout(() => {
     playButton.classList.remove("hidden");
   }, tempoMs * length);

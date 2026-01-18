@@ -92,6 +92,26 @@
       color: #4b5563;
     }
 
+    .status-message {
+      display: inline-block;
+      margin-bottom: 12px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #fff3d6;
+      border: 1px solid #f0d8aa;
+      color: #92400e;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .status-message.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
     .selector select {
       font-size: 1rem;
       padding: 8px 14px;
@@ -221,6 +241,7 @@
       <label for="tetrachordSelect" data-i18n="label.tetrachord">Τετράχορδο</label>
       <select id="tetrachordSelect" aria-label="Επιλογή τετραχόρδου"></select>
     </div>
+    <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
     <div class="clef-wrapper">
       <button class="play-button" id="playButton" type="button" data-i18n="button.play">▶︎</button>
       <div class="keys-frame" aria-label="Πλήκτρα πιάνου από Ντο σε Ντο" data-i18n-attr="aria-label:aria.keys">

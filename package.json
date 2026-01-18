@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "bun --hot dev-server.js",
-    "build": "bun build index.html --outdir dist --minify",
+    "build": "bun build index.html --outdir dist --minify && bun run copy:assets",
+    "copy:assets": "cp tetrachords.yml dist/",
     "test": "bun test"
   },
   "dependencies": {
