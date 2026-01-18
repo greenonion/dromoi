@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "~/.bun/bin/bun build index.html --outdir dist --minify",
-    "dev": "~/.bun/bin/bun run build && ~/.bun/bin/bunx --bun serve dist",
-    "start": "ruby server.rb"
+    "dev": "bun --hot dev-server.js",
+    "build": "bun build index.html --outdir dist --minify",
+    "test": "bun test"
   },
   "dependencies": {
     "vexflow": "^5.0.0"

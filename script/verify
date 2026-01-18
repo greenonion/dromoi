@@ -1,20 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "Starting local server..."
-ruby "$(dirname "${BASH_SOURCE[0]}")/../server.rb" > /dev/null 2>&1 &
-server_pid=$!
-
-cleanup() {
-  if kill -0 "$server_pid" >/dev/null 2>&1; then
-    kill "$server_pid" >/dev/null 2>&1 || true
-  fi
-}
-trap cleanup EXIT
-
-sleep 1
-
-echo "Tests are available at http://localhost:8000/tests.html"
-open "http://localhost:8000/tests.html"
-
-read -r -p "Press Enter after reviewing tests..." _
+bun test

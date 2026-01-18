@@ -7,8 +7,7 @@
 
 ## Tech Stack
 - Keep it boring: plain HTML, CSS, and JavaScript.
-- Use Ruby for the local server and tooling.
-- Use Bun for JavaScript package management.
+- Use Bun for the dev server, tooling, and package management.
 
 ## Libraries
 - Staff rendering: VexFlow (JavaScript, npm package `vexflow`).
@@ -17,4 +16,5 @@
 - Keep changes small and focused.
 - Make atomic commits (one logical change per commit).
 - Use Bun for JavaScript package management tasks (for example, `bun install`).
-- Run `script/verify` and confirm the tests page passes after changes.
+- Run `script/verify` after changes.
+- For browser builds, Bun recommends bundling via `bun build` (with `--watch` for dev) and serving the output.
