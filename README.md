@@ -11,3 +11,6 @@ This site helps people explore Greek folk music scales built from tetrachords an
 - `bun run dev` to build (watch) and serve the site locally
 - `bun run build` to bundle into `dist/`
 - `bun test` to run logic tests
+
+## License
+MIT. See `LICENSE`.
