@@ -177,33 +177,22 @@
       display: block;
     }
 
-    .staff-line {
-      stroke: var(--staff-line);
-      stroke-width: 2.2;
+    .staff {
+      width: 760px;
+      max-width: 100%;
+      display: flex;
+      justify-content: center;
     }
 
-    .note {
-      fill: var(--note-dark);
+    .staff svg {
+      max-width: 100%;
+      height: auto;
     }
 
-    .note-blue {
-      fill: var(--note-blue);
-    }
-
-    .stem {
-      stroke: var(--note-dark);
-      stroke-width: 2.2;
-      stroke-linecap: round;
-    }
-
-    .stem-blue {
-      stroke: var(--note-blue);
-    }
-
-    .clef {
-      font-family: "Times New Roman", serif;
-      font-size: 86px;
-      fill: var(--staff-line);
+    .intervals {
+      width: 760px;
+      max-width: 100%;
+      margin-top: -4px;
     }
 
     .label {
@@ -214,16 +203,12 @@
     }
 
     .interval-label {
-      font-size: 12px;
+      font-size: 13px;
       letter-spacing: 0.08em;
       fill: #6b7280;
       text-transform: uppercase;
     }
 
-    .accidental {
-      font-size: 18px;
-      fill: #111827;
-    }
 
     .footer {
       margin-top: 18px;
@@ -283,354 +268,15 @@
       </div>
     </div>
 
-    <svg width="760" height="170" viewBox="0 0 760 170" aria-label="Νότες στο πεντάγραμμο" data-i18n-attr="aria-label:aria.staff">
-      <line class="staff-line" x1="40" y1="40" x2="720" y2="40" />
-      <line class="staff-line" x1="40" y1="60" x2="720" y2="60" />
-      <line class="staff-line" x1="40" y1="80" x2="720" y2="80" />
-      <line class="staff-line" x1="40" y1="100" x2="720" y2="100" />
-      <line class="staff-line" x1="40" y1="120" x2="720" y2="120" />
-
-      <text class="clef" x="55" y="115">&#x1D11E;</text>
-
-      <g class="note-group" data-note="C">
-        <ellipse class="note" cx="190" cy="130" rx="10" ry="7" />
-        <line class="stem" x1="200" y1="130" x2="200" y2="95" />
-      </g>
-
-      <g class="note-group" data-note="D">
-        <ellipse class="note" cx="270" cy="125" rx="10" ry="7" />
-        <line class="stem" x1="280" y1="125" x2="280" y2="90" />
-      </g>
-
-      <g class="note-group" data-note="E">
-        <ellipse class="note" cx="350" cy="120" rx="10" ry="7" />
-        <line class="stem" x1="360" y1="120" x2="360" y2="85" />
-      </g>
-
-      <g class="note-group" data-note="F">
-        <ellipse class="note" cx="430" cy="115" rx="10" ry="7" />
-        <line class="stem" x1="440" y1="115" x2="440" y2="80" />
-      </g>
-
-      <text class="interval-label" data-interval="0" x="230" y="155">T</text>
-      <text class="interval-label" data-interval="1" x="310" y="155">T</text>
-      <text class="interval-label" data-interval="2" x="390" y="155">T</text>
-
+    <div id="staff" class="staff" aria-label="Νότες στο πεντάγραμμο" data-i18n-attr="aria-label:aria.staff"></div>
+    <svg class="intervals" width="760" height="36" viewBox="0 0 760 36" aria-hidden="true">
+      <text class="interval-label" data-interval="0" x="242" y="26">T</text>
+      <text class="interval-label" data-interval="1" x="327" y="26">T</text>
+      <text class="interval-label" data-interval="2" x="412" y="26">T</text>
     </svg>
 
   </div>
 
-  <script type="module">
-    import {
-      intervalInSemitones,
-      parseTetrachordsYaml
-    } from "./logic.js";
-
-    const translations = {
-      el: {
-        "site.title": "Ελληνικές Λαϊκές Κλίμακες",
-        "label.tetrachord": "Τετράχορδο",
-        "button.play": "▶︎",
-        "aria.keys": "Πλήκτρα πιάνου από Ντο σε Ντο",
-        "aria.staff": "Νότες στο πεντάγραμμο",
-        "aria.tetrachord": "Επιλογή τετραχόρδου",
-        "aria.language": "Επιλογή γλώσσας",
-        "lang.el": "Ελληνικά",
-        "lang.en": "English"
-      },
-      en: {
-        "site.title": "Greek Folk Scales",
-        "label.tetrachord": "Tetrachord",
-        "button.play": "▶︎",
-        "aria.keys": "Piano keys from C to C",
-        "aria.staff": "Notes on the staff",
-        "aria.tetrachord": "Select tetrachord",
-        "aria.language": "Language picker",
-        "lang.el": "Greek",
-        "lang.en": "English"
-      }
-    };
-
-    const intervalLabelsByLang = {
-      el: {
-        1: "Η",
-        2: "T",
-        3: "Τρ"
-      },
-      en: {
-        1: "S",
-        2: "T",
-        3: "m3"
-      }
-    };
-
-    const playButton = document.getElementById("playButton");
-    const select = document.getElementById("tetrachordSelect");
-    const keyEls = Array.from(document.querySelectorAll(".white-key, .black-key"));
-    const noteGroups = Array.from(document.querySelectorAll(".note-group"));
-    const intervalLabels = Array.from(document.querySelectorAll(".interval-label"));
-    const keyLabels = Array.from(document.querySelectorAll(".key-label"));
-    const langButtons = Array.from(document.querySelectorAll(".lang-switcher button"));
-    const i18nElements = Array.from(document.querySelectorAll("[data-i18n]"));
-    const i18nAttrElements = Array.from(document.querySelectorAll("[data-i18n-attr]"));
-
-    const baseFrequencies = {
-      C: 261.63,
-      Db: 277.18,
-      D: 293.66,
-      Eb: 311.13,
-      E: 329.63,
-      F: 349.23,
-      Gb: 369.99,
-      G: 392.0,
-      Ab: 415.3,
-      A: 440.0,
-      Bb: 466.16,
-      B: 493.88,
-      C5: 523.25
-    };
-
-
-    const enharmonicAliases = {
-      "F#": "Gb",
-      "E#": "F"
-    };
-
-    const staffPositions = {
-      C: 130,
-      Db: 127,
-      D: 125,
-      Eb: 122,
-      E: 120,
-      F: 115,
-      Gb: 112,
-      G: 110,
-      Ab: 107,
-      A: 105,
-      Bb: 102,
-      B: 100,
-      C5: 95
-    };
-
-    const noteLabels = {
-      C: "C",
-      Db: "D♭",
-      D: "D",
-      Eb: "E♭",
-      E: "E",
-      F: "F",
-      "F#": "F♯",
-      Gb: "G♭",
-      G: "G",
-      Ab: "A♭",
-      A: "A",
-      Bb: "B♭",
-      B: "B",
-      "E#": "E♯",
-      C5: "C"
-    };
-
-    const accidentals = {
-      Db: "♭",
-      Eb: "♭",
-      Gb: "♭",
-      Ab: "♭",
-      Bb: "♭",
-      "F#": "♯",
-      "E#": "♯"
-    };
-
-    const tempoMs = 700;
-    let audioContext = null;
-    let tetrachords = [];
-    let currentNotes = [];
-    let currentLang = "el";
-
-    function applyTranslations(lang) {
-      const strings = translations[lang] || translations.el;
-      i18nElements.forEach((el) => {
-        const key = el.dataset.i18n;
-        if (strings[key]) {
-          el.textContent = strings[key];
-        }
-      });
-      i18nAttrElements.forEach((el) => {
-        const mappings = el.dataset.i18nAttr.split(";");
-        mappings.forEach((mapping) => {
-          const [attr, key] = mapping.split(":");
-          if (strings[key]) {
-            el.setAttribute(attr, strings[key]);
-          }
-        });
-      });
-      langButtons.forEach((button) => {
-        const isActive = button.dataset.lang === lang;
-        button.classList.toggle("active", isActive);
-        const labelKey = button.dataset.lang === "el" ? "lang.el" : "lang.en";
-        if (strings[labelKey]) {
-          button.textContent = strings[labelKey];
-        }
-      });
-      document.documentElement.lang = lang;
-      if (strings["site.title"]) {
-        document.title = strings["site.title"];
-      }
-    }
-
-    function setLanguage(lang) {
-      currentLang = translations[lang] ? lang : "el";
-      localStorage.setItem("lang", currentLang);
-      applyTranslations(currentLang);
-      buildDropdown();
-      updatePentagram(currentNotes);
-    }
-
-    function detectLanguage() {
-      const stored = localStorage.getItem("lang");
-      if (stored && translations[stored]) {
-        return stored;
-      }
-      return "el";
-    }
-
-
-    function buildDropdown() {
-      select.innerHTML = "";
-      tetrachords.forEach((tet, index) => {
-        const option = document.createElement("option");
-        option.value = index.toString();
-        option.textContent = tet.name;
-        select.appendChild(option);
-      });
-      const strings = translations[currentLang] || translations.el;
-      select.setAttribute("aria-label", strings["aria.tetrachord"] || "Select tetrachord");
-    }
-
-    function setKeyHighlights(notes) {
-      keyEls.forEach((key) => {
-        const keyNote = key.dataset.note;
-        const shouldHighlight = notes.some((note) => {
-          const normalized = enharmonicAliases[note] || note;
-          return normalized === keyNote || (keyNote === "C5" && normalized === "C");
-        });
-        key.classList.toggle("blue", shouldHighlight);
-      });
-
-      keyLabels.forEach((label) => {
-        const labelNote = label.textContent.trim();
-        const shouldShow = notes.some((note) => {
-          const normalized = enharmonicAliases[note] || note;
-          return normalized === labelNote || noteLabels[normalized] === labelNote;
-        });
-        label.classList.toggle("active", shouldShow);
-      });
-    }
-
-    function updatePentagram(notes) {
-      noteGroups.forEach((group, index) => {
-        const note = notes[index] || notes[notes.length - 1];
-        const baseNote = enharmonicAliases[note] || note;
-        const y = staffPositions[baseNote] ?? 120;
-        const ellipse = group.querySelector("ellipse");
-        const stem = group.querySelector("line");
-        ellipse.setAttribute("cy", y.toString());
-        stem.setAttribute("y1", y.toString());
-        stem.setAttribute("y2", (y - 35).toString());
-
-        const existingAccidental = group.querySelector("text.accidental");
-        if (existingAccidental) {
-          existingAccidental.remove();
-        }
-        const accidental = accidentals[note];
-        if (accidental) {
-          const accText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          accText.classList.add("accidental");
-          accText.setAttribute("x", (ellipse.getAttribute("cx") - 22));
-          accText.setAttribute("y", (y + 6).toString());
-          accText.textContent = accidental;
-          group.insertBefore(accText, ellipse);
-        }
-      });
-
-      const intervalMap = intervalLabelsByLang[currentLang] || intervalLabelsByLang.el;
-      intervalLabels.forEach((label, index) => {
-        const start = notes[index];
-        const end = notes[index + 1];
-        const interval = intervalInSemitones(start, end, enharmonicAliases);
-        if (!interval) {
-          label.textContent = "";
-          return;
-        }
-        label.textContent = intervalMap[interval] || "";
-      });
-    }
-
-    function updateSequence() {
-      const selected = tetrachords[Number(select.value)] || tetrachords[0];
-      currentNotes = selected.notes.slice();
-      setKeyHighlights(currentNotes);
-      updatePentagram(currentNotes);
-    }
-
-    function playTone(freq, startTime, duration) {
-      const oscillator = audioContext.createOscillator();
-      const gain = audioContext.createGain();
-      oscillator.type = "sine";
-      oscillator.frequency.value = freq;
-      gain.gain.setValueAtTime(0.0001, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.3, startTime + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-      oscillator.connect(gain);
-      gain.connect(audioContext.destination);
-      oscillator.start(startTime);
-      oscillator.stop(startTime + duration + 0.05);
-    }
-
-    function playSequence() {
-      if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      const noteSequence = [...currentNotes, ...currentNotes.slice(0, -1).reverse()];
-      const now = audioContext.currentTime + 0.05;
-      noteSequence.forEach((note, index) => {
-        const baseNote = enharmonicAliases[note] || note;
-        const freq = baseFrequencies[baseNote];
-        if (!freq) {
-          return;
-        }
-        playTone(freq, now + (tempoMs / 1000) * index, tempoMs / 1000 * 0.8);
-      });
-      return noteSequence.length;
-    }
-
-    async function loadTetrachords() {
-      const response = await fetch("tetrachords.yml");
-      const text = await response.text();
-      tetrachords = parseTetrachordsYaml(text);
-      buildDropdown();
-      select.value = "0";
-      updateSequence();
-    }
-
-    select.addEventListener("change", updateSequence);
-
-    langButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        setLanguage(button.dataset.lang);
-      });
-    });
-
-    playButton.addEventListener("click", () => {
-      playButton.classList.add("hidden");
-      const length = playSequence();
-      setTimeout(() => {
-        playButton.classList.remove("hidden");
-      }, tempoMs * length);
-    });
-
-    currentLang = detectLanguage();
-    applyTranslations(currentLang);
-    loadTetrachords();
-  </script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>

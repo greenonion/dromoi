@@ -1,0 +1,19 @@
+{
+  "name": "dromoi",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "~/.bun/bin/bun build index.html --outdir dist --minify",
+    "dev": "~/.bun/bin/bun run build && ~/.bun/bin/bunx --bun serve dist",
+    "start": "ruby server.rb"
+  },
+  "dependencies": {
+    "vexflow": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
