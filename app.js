@@ -25,7 +25,7 @@ const translations = {
     "aria.staff": "Notes on the staff",
     "aria.intervals": "Intervals between notes",
     "aria.tetrachord": "Select tetrachord",
-    "aria.language": "Language picker",
+    "aria.language": "Select language",
     "lang.el": "Greek",
     "lang.en": "English",
     "status.tetrachords": "Unable to load tetrachords"
@@ -47,10 +47,10 @@ const intervalLabelsByLang = {
 
 const playButton = document.getElementById("playButton");
 const select = document.getElementById("tetrachordSelect");
+const languageSelect = document.getElementById("languageSelect");
 const statusMessage = document.getElementById("statusMessage");
 const keyEls = Array.from(document.querySelectorAll(".white-key, .black-key"));
 const keyLabels = Array.from(document.querySelectorAll(".key-label"));
-const langButtons = Array.from(document.querySelectorAll(".lang-switcher button"));
 const i18nElements = Array.from(document.querySelectorAll("[data-i18n]"));
 const i18nAttrElements = Array.from(document.querySelectorAll("[data-i18n-attr]"));
 const staffWrapper = document.getElementById("staff");
@@ -152,14 +152,15 @@ function applyTranslations(lang) {
       }
     });
   });
-  langButtons.forEach((button) => {
-    const isActive = button.dataset.lang === lang;
-    button.classList.toggle("active", isActive);
-    const labelKey = button.dataset.lang === "el" ? "lang.el" : "lang.en";
-    if (strings[labelKey]) {
-      button.textContent = strings[labelKey];
-    }
-  });
+  if (languageSelect) {
+    languageSelect.value = lang;
+    Array.from(languageSelect.options).forEach((option) => {
+      const labelKey = option.value === "el" ? "lang.el" : "lang.en";
+      if (strings[labelKey]) {
+        option.textContent = strings[labelKey];
+      }
+    });
+  }
   if (statusMessage?.classList.contains("active")) {
     statusMessage.textContent = strings["status.tetrachords"];
   }
@@ -523,10 +524,8 @@ async function loadTetrachords() {
 
 select.addEventListener("change", updateSequence);
 
-langButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    setLanguage(button.dataset.lang);
-  });
+languageSelect?.addEventListener("change", () => {
+  setLanguage(languageSelect.value);
 });
 
 playButton.addEventListener("click", async () => {
