@@ -7,28 +7,32 @@ const translations = {
   el: {
     "site.title": "Ελληνικές Λαϊκές Κλίμακες",
     "label.tetrachord": "Τετράχορδο",
+    "label.pentachord": "Πεντάχορδο",
     "button.play": "▶︎",
     "aria.keys": "Πλήκτρα πιάνου από Ντο σε Ντο",
     "aria.staff": "Νότες στο πεντάγραμμο",
     "aria.intervals": "Διαστήματα",
-    "aria.tetrachord": "Επιλογή τετραχόρδου",
+    "aria.scale": "Επιλογή κλίμακας",
+    "aria.mode": "Επιλογή είδους",
     "aria.language": "Επιλογή γλώσσας",
     "lang.el": "Ελληνικά",
     "lang.en": "English",
-    "status.tetrachords": "Αδυναμία φόρτωσης τετραχόρδων"
+    "status.scales": "Αδυναμία φόρτωσης κλιμάκων"
   },
   en: {
     "site.title": "Greek Folk Scales",
     "label.tetrachord": "Tetrachord",
+    "label.pentachord": "Pentachord",
     "button.play": "▶︎",
     "aria.keys": "Piano keys from C to C",
     "aria.staff": "Notes on the staff",
     "aria.intervals": "Intervals between notes",
-    "aria.tetrachord": "Select tetrachord",
+    "aria.scale": "Select scale",
+    "aria.mode": "Select type",
     "aria.language": "Select language",
     "lang.el": "Greek",
     "lang.en": "English",
-    "status.tetrachords": "Unable to load tetrachords"
+    "status.scales": "Unable to load scales"
   }
 };
 
@@ -46,7 +50,8 @@ const intervalLabelsByLang = {
 };
 
 const playButton = document.getElementById("playButton");
-const select = document.getElementById("tetrachordSelect");
+const select = document.getElementById("scaleSelect");
+const modeButtons = Array.from(document.querySelectorAll(".mode-toggle button"));
 const languageSelect = document.getElementById("languageSelect");
 const statusMessage = document.getElementById("statusMessage");
 const keyEls = Array.from(document.querySelectorAll(".white-key, .black-key"));
@@ -112,8 +117,10 @@ let dryGain = null;
 let wetGain = null;
 let reverbNode = null;
 let tetrachords = [];
+let pentachords = [];
 let currentNotes = [];
 let currentLang = "el";
+let currentMode = "tetrachord";
 const sampleUrls = {
   C3: "https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts@master/FluidR3_GM/acoustic_grand_piano-mp3/C3.mp3",
   F3: "https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts@master/FluidR3_GM/acoustic_grand_piano-mp3/F3.mp3",
@@ -162,7 +169,7 @@ function applyTranslations(lang) {
     });
   }
   if (statusMessage?.classList.contains("active")) {
-    statusMessage.textContent = strings["status.tetrachords"];
+    statusMessage.textContent = strings["status.scales"];
   }
   document.documentElement.lang = lang;
   if (strings["site.title"]) {
@@ -186,17 +193,22 @@ function detectLanguage() {
   return "el";
 }
 
+function getCurrentScales() {
+  return currentMode === "pentachord" ? pentachords : tetrachords;
+}
+
 function buildDropdown() {
   select.innerHTML = "";
-  tetrachords.forEach((tet, index) => {
+  const scales = getCurrentScales();
+  scales.forEach((scale, index) => {
     const option = document.createElement("option");
     option.value = index.toString();
-    option.textContent = tet.name;
+    option.textContent = scale.name;
     select.appendChild(option);
   });
   const strings = translations[currentLang] || translations.el;
-  select.setAttribute("aria-label", strings["aria.tetrachord"] || "Select tetrachord");
-  select.disabled = tetrachords.length === 0;
+  select.setAttribute("aria-label", strings["aria.scale"] || "Select scale");
+  select.disabled = scales.length === 0;
 }
 
 function setKeyHighlights(notes) {
@@ -268,10 +280,11 @@ function renderStaff(notes) {
   stave.setContext(context).draw();
 
   const staveNotes = createStaveNotes(notes);
-  const mainVoice = new Voice({ num_beats: staveNotes.length, beat_value: 4 });
+  const mainVoice = new Voice({ numBeats: staveNotes.length, beatValue: 4 });
+  mainVoice.setStave(stave);
   mainVoice.addTickables(staveNotes);
 
-  new Formatter().joinVoices([mainVoice]).format([mainVoice], 440);
+  new Formatter().joinVoices([mainVoice]).formatToStave([mainVoice], stave);
   mainVoice.draw(context, stave);
 
   renderIntervals(notes, { stave, mainVoice, context });
@@ -326,20 +339,21 @@ function setLoadError(hasError) {
     return;
   }
   const strings = translations[currentLang] || translations.el;
-  statusMessage.textContent = strings["status.tetrachords"] || "Unable to load tetrachords";
+  statusMessage.textContent = strings["status.scales"] || "Unable to load scales";
   statusMessage.classList.toggle("active", hasError);
   playButton.disabled = hasError;
   playButton.setAttribute("aria-disabled", hasError ? "true" : "false");
 }
 
 function updateSequence() {
-  if (!tetrachords.length) {
+  const scales = getCurrentScales();
+  if (!scales.length) {
     currentNotes = [];
     setKeyHighlights(currentNotes);
     updatePentagram(currentNotes);
     return;
   }
-  const selected = tetrachords[Number(select.value)] || tetrachords[0];
+  const selected = scales[Number(select.value)] || scales[0];
   if (!selected || !Array.isArray(selected.notes)) {
     return;
   }
@@ -506,23 +520,68 @@ async function loadTetrachords() {
     }
     const text = await response.text();
     tetrachords = parseTetrachordsYaml(text);
-    buildDropdown();
-    if (!tetrachords.length) {
-      throw new Error("Tetrachords list empty");
-    }
-    select.value = "0";
-    updateSequence();
-    setLoadError(false);
   } catch (error) {
     console.warn("Tetrachords load failed", error);
     tetrachords = [];
-    buildDropdown();
-    updateSequence();
-    setLoadError(true);
   }
 }
 
+async function loadPentachords() {
+  try {
+    const response = await fetch("pentachords.yml");
+    if (!response.ok) {
+      throw new Error(`Failed to load pentachords: ${response.status}`);
+    }
+    const text = await response.text();
+    pentachords = parseTetrachordsYaml(text);
+  } catch (error) {
+    console.warn("Pentachords load failed", error);
+    pentachords = [];
+  }
+}
+
+async function loadScales() {
+  await Promise.all([loadTetrachords(), loadPentachords()]);
+  buildDropdown();
+  if (!tetrachords.length && !pentachords.length) {
+    setLoadError(true);
+    updateSequence();
+    return;
+  }
+  if (currentMode === "pentachord" && !pentachords.length) {
+    currentMode = "tetrachord";
+  }
+  if (currentMode === "tetrachord" && !tetrachords.length) {
+    currentMode = "pentachord";
+  }
+  modeButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.mode === currentMode);
+  });
+  select.value = "0";
+  updateSequence();
+  const activeScales = getCurrentScales();
+  setLoadError(activeScales.length === 0);
+}
+
 select.addEventListener("change", updateSequence);
+
+modeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const nextMode = button.dataset.mode;
+    if (!nextMode || nextMode === currentMode) {
+      return;
+    }
+    currentMode = nextMode;
+    modeButtons.forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.mode === currentMode);
+    });
+    buildDropdown();
+    select.value = "0";
+    updateSequence();
+    const activeScales = getCurrentScales();
+    setLoadError(activeScales.length === 0);
+  });
+});
 
 languageSelect?.addEventListener("change", () => {
   setLanguage(languageSelect.value);
@@ -539,4 +598,4 @@ playButton.addEventListener("click", async () => {
 
 currentLang = detectLanguage();
 applyTranslations(currentLang);
-loadTetrachords();
+loadScales();

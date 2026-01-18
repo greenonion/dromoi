@@ -1,5 +1,124 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test, beforeEach } from "bun:test";
 import { intervalInSemitones, parseTetrachordsYaml } from "../logic.js";
+import { Window } from "happy-dom";
+
+function setupDom() {
+  const window = new Window();
+  const document = window.document;
+  const body = document.body;
+  const originalCreateElement = document.createElement.bind(document);
+  document.createElement = (tagName, options) => {
+    const element = originalCreateElement(tagName, options);
+    if (tagName === "canvas") {
+      element.getContext = () => ({
+        measureText: () => ({ width: 10 }),
+        fillText() {},
+        save() {},
+        restore() {},
+        scale() {},
+        translate() {},
+        beginPath() {},
+        rect() {},
+        fill() {},
+        stroke() {},
+        moveTo() {},
+        lineTo() {},
+        closePath() {},
+        setLineDash() {},
+        arc() {}
+      });
+    }
+    return element;
+  };
+  body.innerHTML = `
+    <div class="lang-switcher">
+      <select id="languageSelect" aria-label="Select language">
+        <option value="el">Ελληνικά</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+    <div class="selector">
+      <div class="mode-toggle" role="group" aria-label="Επιλογή είδους">
+        <button type="button" class="active" data-mode="tetrachord">Τετράχορδο</button>
+        <button type="button" data-mode="pentachord">Πεντάχορδο</button>
+      </div>
+      <select id="scaleSelect" aria-label="Επιλογή κλίμακας"></select>
+    </div>
+    <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
+    <button class="play-button" id="playButton" type="button">▶︎</button>
+    <div class="keys-frame">
+      <svg width="720" height="120" viewBox="0 0 720 120">
+        <rect class="white-key" data-note="C" x="0" y="0" width="90" height="120" rx="10"></rect>
+        <rect class="white-key" data-note="D" x="90" y="0" width="90" height="120" rx="10"></rect>
+        <rect class="white-key" data-note="E" x="180" y="0" width="90" height="120" rx="10"></rect>
+        <rect class="white-key" data-note="F" x="270" y="0" width="90" height="120" rx="10"></rect>
+        <rect class="white-key" data-note="G" x="360" y="0" width="90" height="120" rx="10"></rect>
+        <rect class="white-key" data-note="A" x="450" y="0" width="90" height="120" rx="10"></rect>
+        <rect class="white-key" data-note="B" x="540" y="0" width="90" height="120" rx="10"></rect>
+        <rect class="white-key" data-note="C5" x="630" y="0" width="90" height="120" rx="10"></rect>
+        <rect class="black-key" data-note="Db" x="62" y="0" width="56" height="70" rx="6"></rect>
+        <rect class="black-key" data-note="Eb" x="152" y="0" width="56" height="70" rx="6"></rect>
+        <rect class="black-key" data-note="Gb" x="332" y="0" width="56" height="70" rx="6"></rect>
+        <rect class="black-key" data-note="Ab" x="422" y="0" width="56" height="70" rx="6"></rect>
+        <rect class="black-key" data-note="Bb" x="512" y="0" width="56" height="70" rx="6"></rect>
+        <text class="key-label" x="38" y="102">C</text>
+        <text class="key-label" x="128" y="102">D</text>
+        <text class="key-label" x="218" y="102">E</text>
+        <text class="key-label" x="308" y="102">F</text>
+        <text class="key-label" x="398" y="102">G</text>
+        <text class="key-label" x="488" y="102">A</text>
+        <text class="key-label" x="578" y="102">B</text>
+        <text class="key-label" x="668" y="102">C</text>
+      </svg>
+    </div>
+    <div id="staff" class="staff"></div>
+  `;
+  window.fetch = (url) => {
+    if (url.includes("tetrachords.yml")) {
+      return Promise.resolve({ ok: true, text: () => Promise.resolve("- name: Ράστ\n  notes: [D, E, F#, G]\n") });
+    }
+    if (url.includes("pentachords.yml")) {
+      return Promise.resolve({ ok: true, text: () => Promise.resolve("- name: Ράστ\n  notes: [D, E, F#, G, A]\n") });
+    }
+    if (url.includes("acoustic_grand_piano")) {
+      return Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) });
+    }
+    return Promise.resolve({ ok: false, status: 404, text: () => Promise.resolve("") });
+  };
+  Object.defineProperty(window, "localStorage", {
+    value: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
+    configurable: true
+  });
+  window.AudioContext = class {
+    constructor() {
+      this.currentTime = 0;
+      this.destination = {};
+    }
+    createGain() {
+      return { gain: { value: 1, setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} };
+    }
+    createOscillator() {
+      return { frequency: { value: 0 }, detune: { value: 0 }, connect() {}, start() {}, stop() {}, type: "sine" };
+    }
+    createBiquadFilter() {
+      return { frequency: { setValueAtTime() {} }, Q: { setValueAtTime() {} }, connect() {}, type: "lowpass" };
+    }
+    createConvolver() {
+      return { buffer: null, connect() {} };
+    }
+    createBuffer(channels, length) {
+      return { numberOfChannels: channels, getChannelData: () => new Float32Array(length) };
+    }
+    createBufferSource() {
+      return { buffer: null, playbackRate: { value: 1 }, connect() {}, start() {}, stop() {} };
+    }
+    decodeAudioData() {
+      return Promise.resolve({});
+    }
+  };
+  window.webkitAudioContext = window.AudioContext;
+  return window;
+}
 
 describe("parseTetrachordsYaml", () => {
   test("parses tetrachords", () => {
@@ -21,5 +140,43 @@ describe("intervalInSemitones", () => {
     expect(intervalInSemitones("D", "Eb")).toBe(1);
     expect(intervalInSemitones("D", "F")).toBe(3);
     expect(intervalInSemitones("B", "C")).toBe(1);
+  });
+});
+
+describe("pentachord staff rendering", () => {
+  beforeEach(() => {
+    const window = setupDom();
+    globalThis.window = window;
+    globalThis.document = window.document;
+    globalThis.navigator = window.navigator;
+    globalThis.fetch = window.fetch;
+    globalThis.localStorage = window.localStorage;
+    globalThis.AudioContext = window.AudioContext;
+    globalThis.webkitAudioContext = window.webkitAudioContext;
+  });
+
+  test("renders staff notes for pentachord selection", async () => {
+    await import("../app.js");
+
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      if (document.querySelectorAll("#scaleSelect option").length > 0) {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    const pentachordButton = document.querySelector('[data-mode="pentachord"]');
+    pentachordButton.click();
+
+    await Promise.resolve();
+
+    const staffSvg = document.querySelector("#staff svg");
+    expect(staffSvg).not.toBeNull();
+    const stavenotes = staffSvg.querySelectorAll("g.vf-stavenote");
+    const noteheads = staffSvg.querySelectorAll("g.vf-notehead");
+    if (stavenotes.length === 0 && noteheads.length === 0) {
+      throw new Error(`No notes rendered. SVG: ${staffSvg.outerHTML}`);
+    }
+    expect(noteheads.length || stavenotes.length).toBe(5);
   });
 });

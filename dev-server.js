@@ -8,7 +8,9 @@ const port = Number(process.env.PORT || 8000);
 const root = fileURLToPath(new URL(".", import.meta.url));
 const distRoot = join(root, "dist");
 const tetrachordsSource = join(root, "tetrachords.yml");
+const pentachordsSource = join(root, "pentachords.yml");
 const tetrachordsDest = join(distRoot, "tetrachords.yml");
+const pentachordsDest = join(distRoot, "pentachords.yml");
 
 const contentTypes = {
   ".css": "text/css",
@@ -20,12 +22,17 @@ const contentTypes = {
   ".yaml": "text/yaml"
 };
 
-async function copyTetrachords() {
+async function copyScaleFile(source, dest, label) {
   try {
-    await copyFile(tetrachordsSource, tetrachordsDest);
+    await copyFile(source, dest);
   } catch (error) {
-    console.warn("Failed to copy tetrachords.yml", error);
+    console.warn(`Failed to copy ${label}`, error);
   }
+}
+
+async function copyScaleAssets() {
+  await copyScaleFile(tetrachordsSource, tetrachordsDest, "tetrachords.yml");
+  await copyScaleFile(pentachordsSource, pentachordsDest, "pentachords.yml");
 }
 
 const buildProcess = Bun.spawn(
@@ -33,14 +40,19 @@ const buildProcess = Bun.spawn(
   { stdout: "inherit", stderr: "inherit" }
 );
 
-await copyTetrachords();
+await copyScaleAssets();
 
 const tetrachordsWatcher = watch(tetrachordsSource, { persistent: true }, () => {
-  copyTetrachords();
+  copyScaleAssets();
+});
+
+const pentachordsWatcher = watch(pentachordsSource, { persistent: true }, () => {
+  copyScaleAssets();
 });
 
 process.on("SIGINT", () => {
   tetrachordsWatcher.close();
+  pentachordsWatcher.close();
   buildProcess.kill();
   process.exit(0);
 });
