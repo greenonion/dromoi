@@ -69,6 +69,7 @@ const baseFrequencies = {
   F: 349.23,
   Gb: 369.99,
   G: 392.0,
+  "G#": 415.3,
   Ab: 415.3,
   A: 440.0,
   Bb: 466.16,
@@ -78,7 +79,8 @@ const baseFrequencies = {
 
 const enharmonicAliases = {
   "F#": "Gb",
-  "E#": "F"
+  "E#": "F",
+  "G#": "Ab"
 };
 
 const noteLabels = {
@@ -91,6 +93,7 @@ const noteLabels = {
   "F#": "F♯",
   Gb: "G♭",
   G: "G",
+  "G#": "G♯",
   Ab: "A♭",
   A: "A",
   Bb: "B♭",
@@ -106,6 +109,7 @@ const accidentals = {
   Ab: "b",
   Bb: "b",
   "F#": "#",
+  "G#": "#",
   "E#": "#"
 };
 
