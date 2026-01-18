@@ -16,5 +16,5 @@
 - Keep changes small and focused.
 - Make atomic commits (one logical change per commit).
 - Use Bun for JavaScript package management tasks (for example, `bun install`).
-- Run `script/verify` after changes.
+- Run `bun test` after changes.
 - For browser builds, Bun recommends bundling via `bun build` (with `--watch` for dev) and serving the output.
