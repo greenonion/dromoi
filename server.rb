@@ -5,6 +5,13 @@ require 'webrick'
 
 root = File.expand_path(__dir__)
 dist_root = File.join(root, 'dist')
+
+unless File.directory?(dist_root)
+  puts 'Building assets with bun...'
+  build_ok = system('bun', 'run', 'build')
+  warn 'Build failed or dist/ missing. Falling back to source files.' unless build_ok && File.directory?(dist_root)
+end
+
 roots = File.directory?(dist_root) ? [dist_root, root] : [root]
 server = WEBrick::HTTPServer.new(Port: 8000)
 

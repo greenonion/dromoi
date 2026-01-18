@@ -10,6 +10,7 @@ const translations = {
     "button.play": "▶︎",
     "aria.keys": "Πλήκτρα πιάνου από Ντο σε Ντο",
     "aria.staff": "Νότες στο πεντάγραμμο",
+    "aria.intervals": "Διαστήματα",
     "aria.tetrachord": "Επιλογή τετραχόρδου",
     "aria.language": "Επιλογή γλώσσας",
     "lang.el": "Ελληνικά",
@@ -21,6 +22,7 @@ const translations = {
     "button.play": "▶︎",
     "aria.keys": "Piano keys from C to C",
     "aria.staff": "Notes on the staff",
+    "aria.intervals": "Intervals between notes",
     "aria.tetrachord": "Select tetrachord",
     "aria.language": "Language picker",
     "lang.el": "Greek",
@@ -30,14 +32,14 @@ const translations = {
 
 const intervalLabelsByLang = {
   el: {
-    1: "Η",
+    1: "S",
     2: "T",
-    3: "Τρ"
+    3: "3m"
   },
   en: {
     1: "S",
     2: "T",
-    3: "m3"
+    3: "3m"
   }
 };
 
@@ -49,6 +51,7 @@ const langButtons = Array.from(document.querySelectorAll(".lang-switcher button"
 const i18nElements = Array.from(document.querySelectorAll("[data-i18n]"));
 const i18nAttrElements = Array.from(document.querySelectorAll("[data-i18n-attr]"));
 const staffWrapper = document.getElementById("staff");
+const intervalsWrapper = document.getElementById("intervals");
 
 const baseFrequencies = {
   C: 261.63,
@@ -246,9 +249,32 @@ function renderStaff(notes) {
 
 }
 
+function renderIntervals(notes) {
+  if (!intervalsWrapper) {
+    return;
+  }
+  intervalsWrapper.innerHTML = "";
+  if (!notes || notes.length < 2) {
+    return;
+  }
+  const labels = intervalLabelsByLang[currentLang] || intervalLabelsByLang.el;
+  notes.slice(0, -1).forEach((note, index) => {
+    const nextNote = notes[index + 1];
+    const diff = intervalInSemitones(note, nextNote, enharmonicAliases);
+    if (diff == null) {
+      return;
+    }
+    const label = labels[diff] || `${diff}`;
+    const chip = document.createElement("span");
+    chip.className = "interval-chip";
+    chip.textContent = label;
+    intervalsWrapper.appendChild(chip);
+  });
+}
+
 function updatePentagram(notes) {
   renderStaff(notes);
-
+  renderIntervals(notes);
 }
 
 function updateSequence() {
