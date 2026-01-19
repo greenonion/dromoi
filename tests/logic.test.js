@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeEach } from "bun:test";
-import { intervalInSemitones, parseTetrachordsYaml } from "../logic.js";
+import { intervalInSemitones, parseIntervalsYaml, parseScaleCombosYaml } from "../logic.js";
 import { Window } from "happy-dom";
 
 function setupDom() {
@@ -38,10 +38,12 @@ function setupDom() {
       </select>
     </div>
     <div class="selector">
-      <div class="mode-toggle" role="group" aria-label="Επιλογή είδους">
-        <button type="button" class="active" data-mode="tetrachord">Τετράχορδο</button>
-        <button type="button" data-mode="pentachord">Πεντάχορδο</button>
-      </div>
+    <div class="mode-toggle" role="group" aria-label="Επιλογή είδους">
+      <button type="button" class="active" data-mode="tetrachord">Τετράχορδο</button>
+      <button type="button" data-mode="pentachord">Πεντάχορδο</button>
+      <button type="button" data-mode="scale">Κλίμακα</button>
+    </div>
+
       <select id="scaleSelect" aria-label="Επιλογή κλίμακας"></select>
     </div>
     <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
@@ -73,18 +75,32 @@ function setupDom() {
     </div>
     <div id="staff" class="staff"></div>
   `;
-  window.fetch = (url) => {
-    if (url.includes("tetrachords.yml")) {
-      return Promise.resolve({ ok: true, text: () => Promise.resolve("- name: Ράστ\n  notes: [D, E, F#, G]\n") });
-    }
-    if (url.includes("pentachords.yml")) {
-      return Promise.resolve({ ok: true, text: () => Promise.resolve("- name: Ράστ\n  notes: [D, E, F#, G, A]\n") });
-    }
-    if (url.includes("acoustic_grand_piano")) {
-      return Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) });
-    }
-    return Promise.resolve({ ok: false, status: 404, text: () => Promise.resolve("") });
-  };
+    window.fetch = (url) => {
+      if (url.includes("tetrachords.yml")) {
+        return Promise.resolve({ ok: true, text: () => Promise.resolve("- name: Ράστ\n  intervals: [2, 2, 1]\n") });
+      }
+      if (url.includes("pentachords.yml")) {
+        return Promise.resolve({ ok: true, text: () => Promise.resolve("- name: Ράστ\n  intervals: [2, 2, 1, 2]\n") });
+      }
+      if (url.includes("scales.yml")) {
+        return Promise.resolve({
+          ok: true,
+          text: () =>
+            Promise.resolve(
+              "- name: Major\n  first:\n    name: Ράστ\n    type: pentachord\n  second:\n    name: Ράστ\n    type: tetrachord\n"
+            )
+        });
+      }
+      if (url.includes("acoustic_grand_piano")) {
+        return Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) });
+      }
+      return Promise.resolve({ ok: false, status: 404, text: () => Promise.resolve("") });
+    };
+    window.requestAnimationFrame = (callback) => {
+      callback(0);
+      return 0;
+    };
+
   Object.defineProperty(window, "localStorage", {
     value: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
     configurable: true
@@ -120,17 +136,17 @@ function setupDom() {
   return window;
 }
 
-describe("parseTetrachordsYaml", () => {
-  test("parses tetrachords", () => {
+describe("parseIntervalsYaml", () => {
+  test("parses intervals", () => {
     const yamlText = `- name: Ράστ
-  notes: [C, D, E, F]
+  intervals: [2, 2, 1]
 - name: Ουσάκ
-  notes: [D, Eb, F, G]
+  intervals: [1, 2, 2]
 `;
-    const parsed = parseTetrachordsYaml(yamlText);
+    const parsed = parseIntervalsYaml(yamlText);
     expect(parsed.length).toBe(2);
     expect(parsed[0]?.name).toBe("Ράστ");
-    expect(parsed[1]?.notes?.join(",")).toBe("D,Eb,F,G");
+    expect(parsed[1]?.intervals?.join(",")).toBe("1,2,2");
   });
 });
 
@@ -143,8 +159,26 @@ describe("intervalInSemitones", () => {
   });
 });
 
-describe("pentachord staff rendering", () => {
-  beforeEach(() => {
+describe("parseScaleCombosYaml", () => {
+  test("parses scale combos", () => {
+    const yamlText = `- name: Major
+  first:
+    name: Ράστ
+    type: pentachord
+  second:
+    name: Ράστ
+    type: tetrachord
+`;
+    const parsed = parseScaleCombosYaml(yamlText);
+    expect(parsed.length).toBe(1);
+    expect(parsed[0]?.name).toBe("Major");
+    expect(parsed[0]?.first?.name).toBe("Ράστ");
+    expect(parsed[0]?.second?.type).toBe("tetrachord");
+  });
+});
+
+describe("staff rendering", () => {
+  beforeEach(async () => {
     const window = setupDom();
     globalThis.window = window;
     globalThis.document = window.document;
@@ -153,18 +187,20 @@ describe("pentachord staff rendering", () => {
     globalThis.localStorage = window.localStorage;
     globalThis.AudioContext = window.AudioContext;
     globalThis.webkitAudioContext = window.webkitAudioContext;
+    await import(`../app.js?cache=${Date.now()}`);
   });
 
-  test("renders staff notes for pentachord selection", async () => {
-    await import("../app.js");
-
+  async function waitForOptions() {
     for (let attempt = 0; attempt < 10; attempt += 1) {
       if (document.querySelectorAll("#scaleSelect option").length > 0) {
-        break;
+        return;
       }
       await new Promise((resolve) => setTimeout(resolve, 0));
     }
+  }
 
+  test("renders staff notes for pentachord selection", async () => {
+    await waitForOptions();
     const pentachordButton = document.querySelector('[data-mode="pentachord"]');
     pentachordButton.click();
 
@@ -178,5 +214,26 @@ describe("pentachord staff rendering", () => {
       throw new Error(`No notes rendered. SVG: ${staffSvg.outerHTML}`);
     }
     expect(noteheads.length || stavenotes.length).toBe(5);
+  });
+
+  test("renders staff notes for scale selection", async () => {
+    await waitForOptions();
+    const scaleButton = document.querySelector('[data-mode="scale"]');
+    scaleButton.click();
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const staffSvg = document.querySelector("#staff svg");
+    expect(staffSvg).not.toBeNull();
+    const stavenotes = staffSvg.querySelectorAll("g.vf-stavenote");
+    const noteheads = staffSvg.querySelectorAll("g.vf-notehead");
+    if (stavenotes.length === 0 && noteheads.length === 0) {
+      throw new Error(`No notes rendered. SVG: ${staffSvg.outerHTML}`);
+    }
+    expect(noteheads.length || stavenotes.length).toBe(8);
+    const labelNodes = staffSvg.querySelectorAll("text");
+    const labels = Array.from(labelNodes).map((node) => node.textContent);
+    const rastCount = labels.filter((label) => label === "Ράστ").length;
+    expect(rastCount).toBeGreaterThanOrEqual(2);
   });
 });

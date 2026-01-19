@@ -1,0 +1,7 @@
+- name: Major
+  first:
+    name: Ράστ
+    type: pentachord
+  second:
+    name: Ράστ
+    type: tetrachord

@@ -15,12 +15,15 @@ export const noteToSemitone = {
   A: 9,
   "A#": 10,
   Bb: 10,
-  B: 11,
-  C5: 12
+  B: 11
 };
 
 export function normalizeNote(note, enharmonicAliases = {}) {
-  return enharmonicAliases[note] || note;
+  if (!note) {
+    return note;
+  }
+  const stripped = note.replace(/\d+/g, "");
+  return enharmonicAliases[stripped] || stripped;
 }
 
 export function intervalInSemitones(startNote, endNote, enharmonicAliases = {}) {
@@ -37,6 +40,78 @@ export function intervalInSemitones(startNote, endNote, enharmonicAliases = {}) 
 }
 
 export function parseTetrachordsYaml(text) {
+  return parseSimpleNotesYaml(text);
+}
+
+export function parseIntervalsYaml(text) {
+  return parseSimpleIntervalsYaml(text);
+}
+
+export function parseScaleCombosYaml(text) {
+  const lines = text.split(/\r?\n/);
+  const items = [];
+  let current = null;
+  let currentPart = null;
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      return;
+    }
+    if (trimmed.startsWith("-")) {
+      if (current) {
+        items.push(current);
+      }
+      current = { name: "", first: null, second: null };
+      currentPart = null;
+      const nameMatch = trimmed.match(/-\s*name:\s*(.+)/);
+      if (nameMatch) {
+        current.name = nameMatch[1].trim();
+      }
+      return;
+    }
+    if (!current) {
+      return;
+    }
+    if (trimmed.startsWith("name:") && currentPart) {
+      currentPart.name = trimmed.replace("name:", "").trim();
+      return;
+    }
+    if (trimmed.startsWith("name:")) {
+      current.name = trimmed.replace("name:", "").trim();
+      return;
+    }
+    if (trimmed.startsWith("first:")) {
+      current.first = { name: "", type: "" };
+      currentPart = current.first;
+      const remainder = trimmed.replace("first:", "").trim();
+      if (remainder) {
+        current.first.name = remainder;
+      }
+      return;
+    }
+    if (trimmed.startsWith("second:")) {
+      current.second = { name: "", type: "" };
+      currentPart = current.second;
+      const remainder = trimmed.replace("second:", "").trim();
+      if (remainder) {
+        current.second.name = remainder;
+      }
+      return;
+    }
+    if (trimmed.startsWith("type:")) {
+      if (currentPart) {
+        currentPart.type = trimmed.replace("type:", "").trim();
+      }
+      return;
+    }
+  });
+  if (current) {
+    items.push(current);
+  }
+  return items.filter((item) => item.name);
+}
+
+function parseSimpleNotesYaml(text) {
   const lines = text.split(/\r?\n/);
   const items = [];
   let current = null;
@@ -68,6 +143,52 @@ export function parseTetrachordsYaml(text) {
       }
     } else if (trimmed.startsWith("-") && current.notes) {
       current.notes.push(trimmed.replace("-", "").trim());
+    }
+  });
+  if (current) {
+    items.push(current);
+  }
+  return items;
+}
+
+function parseSimpleIntervalsYaml(text) {
+  const lines = text.split(/\r?\n/);
+  const items = [];
+  let current = null;
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      return;
+    }
+    if (trimmed.startsWith("-")) {
+      if (current) {
+        items.push(current);
+      }
+      current = { name: "", intervals: [] };
+      const nameMatch = trimmed.match(/-\s*name:\s*(.+)/);
+      if (nameMatch) {
+        current.name = nameMatch[1].trim();
+      }
+      return;
+    }
+    if (!current) {
+      return;
+    }
+    if (trimmed.startsWith("name:")) {
+      current.name = trimmed.replace("name:", "").trim();
+    } else if (trimmed.startsWith("intervals:")) {
+      const listMatch = trimmed.match(/intervals:\s*\[(.+)\]/);
+      if (listMatch) {
+        current.intervals = listMatch[1]
+          .split(",")
+          .map((value) => Number(value.trim()))
+          .filter((value) => Number.isFinite(value));
+      }
+    } else if (trimmed.startsWith("-") && current.intervals) {
+      const value = Number(trimmed.replace("-", "").trim());
+      if (Number.isFinite(value)) {
+        current.intervals.push(value);
+      }
     }
   });
   if (current) {

@@ -1,12 +1,12 @@
 - name: Ράστ
-  notes: [D, E, F#, G]
+  intervals: [2, 2, 1]
 - name: Ουσάκ
-  notes: [D, Eb, F, G]
+  intervals: [1, 2, 2]
 - name: Σαμπά
-  notes: [D, E, F, Gb]
+  intervals: [2, 1, 1]
 - name: Χιτζάζ
-  notes: [D, Eb, F#, G]
+  intervals: [1, 3, 1]
 - name: Μινόρε
-  notes: [D, E, F, G]
+  intervals: [2, 1, 2]
 - name: Χουζάμ
-  notes: [D, E#, F#, G]
+  intervals: [3, 1, 1]

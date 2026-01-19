@@ -1,4 +1,4 @@
-import { intervalInSemitones, parseTetrachordsYaml } from "./logic.js";
+import { intervalInSemitones, noteToSemitone, parseIntervalsYaml, parseScaleCombosYaml } from "./logic.js";
 import VexFlow from "vexflow";
 
 const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } = VexFlow;
@@ -8,6 +8,7 @@ const translations = {
     "site.title": "Ελληνικές Λαϊκές Κλίμακες",
     "label.tetrachord": "Τετράχορδο",
     "label.pentachord": "Πεντάχορδο",
+    "label.scale": "Κλίμακα",
     "button.play": "▶︎",
     "aria.keys": "Πλήκτρα πιάνου από Ντο σε Ντο",
     "aria.staff": "Νότες στο πεντάγραμμο",
@@ -23,6 +24,7 @@ const translations = {
     "site.title": "Greek Folk Scales",
     "label.tetrachord": "Tetrachord",
     "label.pentachord": "Pentachord",
+    "label.scale": "Scale",
     "button.play": "▶︎",
     "aria.keys": "Piano keys from C to C",
     "aria.staff": "Notes on the staff",
@@ -122,9 +124,12 @@ let wetGain = null;
 let reverbNode = null;
 let tetrachords = [];
 let pentachords = [];
+let scales = [];
 let currentNotes = [];
 let currentLang = "el";
 let currentMode = "tetrachord";
+let currentGroupLabels = null;
+const baseRoot = "D";
 const sampleUrls = {
   C3: "https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts@master/FluidR3_GM/acoustic_grand_piano-mp3/C3.mp3",
   F3: "https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts@master/FluidR3_GM/acoustic_grand_piano-mp3/F3.mp3",
@@ -198,7 +203,13 @@ function detectLanguage() {
 }
 
 function getCurrentScales() {
-  return currentMode === "pentachord" ? pentachords : tetrachords;
+  if (currentMode === "pentachord") {
+    return pentachords;
+  }
+  if (currentMode === "scale") {
+    return scales;
+  }
+  return tetrachords;
 }
 
 function buildDropdown() {
@@ -214,6 +225,98 @@ function buildDropdown() {
   select.setAttribute("aria-label", strings["aria.scale"] || "Select scale");
   select.disabled = scales.length === 0;
 }
+
+function findChordByName(chordList, name) {
+  if (!name) {
+    return null;
+  }
+  return chordList.find((item) => item.name === name) || null;
+}
+
+function buildScaleNotes(scaleCombo) {
+  if (!scaleCombo?.first || !scaleCombo?.second) {
+    return null;
+  }
+  const firstList = scaleCombo.first.type === "pentachord" ? pentachords : tetrachords;
+  const secondList = scaleCombo.second.type === "pentachord" ? pentachords : tetrachords;
+  const firstChord = findChordByName(firstList, scaleCombo.first.name);
+  const secondChord = findChordByName(secondList, scaleCombo.second.name);
+  if (!firstChord || !secondChord) {
+    return null;
+  }
+  const firstNotes = notesFromIntervals(firstChord.intervals, baseRoot);
+  if (!firstNotes.length) {
+    return null;
+  }
+  const secondRoot = firstNotes[firstNotes.length - 1];
+  const secondNotes = notesFromIntervals(secondChord.intervals, secondRoot);
+  if (!secondNotes.length) {
+    return null;
+  }
+  const combined = [...firstNotes, ...secondNotes.slice(1)];
+  return {
+    notes: combined,
+    groupLabels: {
+      labels: { first: firstChord.name, second: secondChord.name },
+      groupLength: firstNotes.length
+    }
+  };
+}
+
+function notesFromIntervals(intervals, startNote) {
+  if (!intervals?.length) {
+    return [];
+  }
+  const startIndex = noteIndexFromNote(startNote);
+  if (startIndex == null) {
+    return [];
+  }
+  const steps = [startIndex];
+  intervals.forEach((interval) => {
+    const last = steps[steps.length - 1];
+    steps.push(last + interval);
+  });
+  return steps.map((step, index) => {
+    const octave = Math.floor(step / 12);
+    const semitone = ((step % 12) + 12) % 12;
+    const base = semitoneToNote[semitone] || "C";
+    if (octave <= 0) {
+      return base;
+    }
+    if (octave === 1 && base === "C") {
+      return "C5";
+    }
+    return base;
+  });
+}
+
+function noteIndexFromNote(note) {
+  if (!note) {
+    return null;
+  }
+  const base = enharmonicAliases[note] || note;
+  const isHighC = note === "C5";
+  const baseStep = noteToSemitone[base];
+  if (baseStep == null) {
+    return null;
+  }
+  return isHighC ? baseStep + 12 : baseStep;
+}
+
+const semitoneToNote = {
+  0: "C",
+  1: "C#",
+  2: "D",
+  3: "Eb",
+  4: "E",
+  5: "F",
+  6: "F#",
+  7: "G",
+  8: "Ab",
+  9: "A",
+  10: "Bb",
+  11: "B"
+};
 
 function setKeyHighlights(notes) {
   keyEls.forEach((key) => {
@@ -265,7 +368,7 @@ function createStaveNotes(notes) {
   });
 }
 
-function renderStaff(notes) {
+function renderStaff(notes, groupLabels = null, groupLength = null) {
   if (!staffWrapper) {
     return null;
   }
@@ -292,6 +395,9 @@ function renderStaff(notes) {
   mainVoice.draw(context, stave);
 
   renderIntervals(notes, { stave, mainVoice, context });
+  if (groupLabels && Number.isInteger(groupLength)) {
+    renderGroupLabels(groupLabels, groupLength, { mainVoice, context });
+  }
 
   context.setFillStyle("#111827");
   context.setStrokeStyle("#1f2933");
@@ -302,6 +408,46 @@ function renderStaff(notes) {
   }
 
   return { stave, mainVoice, context };
+}
+
+function renderGroupLabels(groupLabels, groupLength, metrics) {
+  const { mainVoice, context } = metrics;
+  const tickables = mainVoice.getTickables();
+  if (!tickables?.length) {
+    return;
+  }
+  const groupIndex = Math.max(0, groupLength - 1);
+  const boundaryTickable = tickables[groupIndex];
+  const lastTickable = tickables[tickables.length - 1];
+  const boundaryContext = boundaryTickable?.getTickContext?.();
+  const lastContext = lastTickable?.getTickContext?.();
+  const boundaryX = boundaryContext?.getX?.();
+  const lastX = lastContext?.getX?.();
+  if (!Number.isFinite(boundaryX) || !Number.isFinite(lastX)) {
+    return;
+  }
+  const firstLabel = groupLabels.first || "";
+  const secondLabel = groupLabels.second || "";
+  if (!firstLabel && !secondLabel) {
+    return;
+  }
+
+  context.save();
+  context.setFont("14px Georgia, Times New Roman, serif", "");
+  context.setFillStyle("#1f2933");
+
+  const labelOffset = 18;
+  const baseOffset = 42;
+  const firstX = boundaryX + baseOffset;
+  const secondX = (boundaryX + lastX) / 2 + baseOffset;
+
+  if (firstLabel) {
+    context.fillText(firstLabel, firstX - firstLabel.length * 3.6, 44 - labelOffset);
+  }
+  if (secondLabel) {
+    context.fillText(secondLabel, secondX - secondLabel.length * 3.6, 44 + 74);
+  }
+  context.restore();
 }
 
 function renderIntervals(notes, metrics) {
@@ -335,6 +481,10 @@ function renderIntervals(notes, metrics) {
 }
 
 function updatePentagram(notes) {
+  if (currentMode === "scale" && currentGroupLabels) {
+    renderStaff(notes, currentGroupLabels.labels, currentGroupLabels.groupLength);
+    return;
+  }
   renderStaff(notes);
 }
 
@@ -353,15 +503,30 @@ function updateSequence() {
   const scales = getCurrentScales();
   if (!scales.length) {
     currentNotes = [];
+    currentGroupLabels = null;
     setKeyHighlights(currentNotes);
     updatePentagram(currentNotes);
     return;
   }
   const selected = scales[Number(select.value)] || scales[0];
-  if (!selected || !Array.isArray(selected.notes)) {
+  if (!selected) {
     return;
   }
-  currentNotes = selected.notes.slice();
+  if (currentMode === "scale") {
+    const built = buildScaleNotes(selected);
+    if (!built) {
+      return;
+    }
+    currentNotes = built.notes;
+    currentGroupLabels = built.groupLabels;
+  } else {
+    const notes = notesFromIntervals(selected.intervals, baseRoot);
+    if (!notes.length) {
+      return;
+    }
+    currentNotes = notes;
+    currentGroupLabels = null;
+  }
   setKeyHighlights(currentNotes);
   updatePentagram(currentNotes);
 }
@@ -523,7 +688,7 @@ async function loadTetrachords() {
       throw new Error(`Failed to load tetrachords: ${response.status}`);
     }
     const text = await response.text();
-    tetrachords = parseTetrachordsYaml(text);
+    tetrachords = parseIntervalsYaml(text);
   } catch (error) {
     console.warn("Tetrachords load failed", error);
     tetrachords = [];
@@ -537,17 +702,31 @@ async function loadPentachords() {
       throw new Error(`Failed to load pentachords: ${response.status}`);
     }
     const text = await response.text();
-    pentachords = parseTetrachordsYaml(text);
+    pentachords = parseIntervalsYaml(text);
   } catch (error) {
     console.warn("Pentachords load failed", error);
     pentachords = [];
   }
 }
 
+async function loadScaleCombos() {
+  try {
+    const response = await fetch("scales.yml");
+    if (!response.ok) {
+      throw new Error(`Failed to load scales: ${response.status}`);
+    }
+    const text = await response.text();
+    scales = parseScaleCombosYaml(text);
+  } catch (error) {
+    console.warn("Scales load failed", error);
+    scales = [];
+  }
+}
+
 async function loadScales() {
-  await Promise.all([loadTetrachords(), loadPentachords()]);
+  await Promise.all([loadTetrachords(), loadPentachords(), loadScaleCombos()]);
   buildDropdown();
-  if (!tetrachords.length && !pentachords.length) {
+  if (!tetrachords.length && !pentachords.length && !scales.length) {
     setLoadError(true);
     updateSequence();
     return;
@@ -557,6 +736,9 @@ async function loadScales() {
   }
   if (currentMode === "tetrachord" && !tetrachords.length) {
     currentMode = "pentachord";
+  }
+  if (currentMode === "scale" && !scales.length) {
+    currentMode = tetrachords.length ? "tetrachord" : "pentachord";
   }
   modeButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.mode === currentMode);
