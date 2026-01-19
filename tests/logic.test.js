@@ -87,7 +87,10 @@ function setupDom() {
         <text class="key-label black" x="720" y="52">C♯</text>
       </svg>
     </div>
-    <div id="staff" class="staff"></div>
+    <div class="staff-stack">
+      <div id="staffAsc" class="staff" data-role="asc"></div>
+      <div id="staffDesc" class="staff" data-role="desc"></div>
+    </div>
   `;
     window.fetch = (url) => {
       if (url.includes("tetrachords.yml")) {
@@ -96,15 +99,16 @@ function setupDom() {
       if (url.includes("pentachords.yml")) {
         return Promise.resolve({ ok: true, text: () => Promise.resolve("- name: Ράστ\n  intervals: [2, 2, 1, 2]\n") });
       }
-      if (url.includes("scales.yml")) {
-        return Promise.resolve({
-          ok: true,
-          text: () =>
-            Promise.resolve(
-              "- name: Major\n  first:\n    name: Ράστ\n    type: pentachord\n  second:\n    name: Ράστ\n    type: tetrachord\n"
-            )
-        });
-      }
+    if (url.includes("scales.yml")) {
+      return Promise.resolve({
+        ok: true,
+        text: () =>
+          Promise.resolve(
+            "- name: Major\n  first:\n    name: Ράστ\n    type: pentachord\n  second:\n    name: Ράστ\n    type: tetrachord\n- name: Ράστ\n  first:\n    name: Ράστ\n    type: pentachord\n  second:\n    name: Ράστ\n    type: tetrachord\n  descending:\n    first:\n      name: Μινόρε\n      type: tetrachord\n    second:\n      name: Ράστ\n      type: pentachord\n"
+          )
+      });
+    }
+
       if (url.includes("acoustic_grand_piano")) {
         return Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) });
       }
@@ -231,7 +235,7 @@ describe("staff rendering", () => {
 
     await Promise.resolve();
 
-    const staffSvg = document.querySelector("#staff svg");
+    const staffSvg = document.querySelector("#staffAsc svg");
     expect(staffSvg).not.toBeNull();
     const stavenotes = staffSvg.querySelectorAll("g.vf-stavenote");
     const noteheads = staffSvg.querySelectorAll("g.vf-notehead");
@@ -248,7 +252,7 @@ describe("staff rendering", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    const staffSvg = document.querySelector("#staff svg");
+    const staffSvg = document.querySelector("#staffAsc svg");
     expect(staffSvg).not.toBeNull();
     const stavenotes = staffSvg.querySelectorAll("g.vf-stavenote");
     const noteheads = staffSvg.querySelectorAll("g.vf-notehead");
@@ -268,5 +272,8 @@ describe("staff rendering", () => {
     const labels = Array.from(labelNodes).map((node) => node.textContent);
     const rastCount = labels.filter((label) => label === "Ράστ").length;
     expect(rastCount).toBeGreaterThanOrEqual(2);
+
+    const descSvg = document.querySelector("#staffDesc svg");
+    expect(descSvg).not.toBeNull();
   });
 });

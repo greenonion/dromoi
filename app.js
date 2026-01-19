@@ -17,7 +17,8 @@ const translations = {
     "label.scale": "Κλίμακα",
     "button.play": "▶︎",
     "aria.keys": "Πλήκτρα πιάνου από Ντο σε Ντο",
-    "aria.staff": "Νότες στο πεντάγραμμο",
+    "aria.staff.asc": "Νότες στο πεντάγραμμο (Άνοδος)",
+    "aria.staff.desc": "Νότες στο πεντάγραμμο (Κάθοδος)",
     "aria.intervals": "Διαστήματα",
     "aria.scale": "Επιλογή κλίμακας",
     "aria.mode": "Επιλογή είδους",
@@ -33,7 +34,8 @@ const translations = {
     "label.scale": "Scale",
     "button.play": "▶︎",
     "aria.keys": "Piano keys from C to C",
-    "aria.staff": "Notes on the staff",
+    "aria.staff.asc": "Notes on the staff (Ascending)",
+    "aria.staff.desc": "Notes on the staff (Descending)",
     "aria.intervals": "Intervals between notes",
     "aria.scale": "Select scale",
     "aria.mode": "Select type",
@@ -66,7 +68,8 @@ const keyEls = Array.from(document.querySelectorAll(".white-key, .black-key"));
 const keyLabels = Array.from(document.querySelectorAll(".key-label"));
 const i18nElements = Array.from(document.querySelectorAll("[data-i18n]"));
 const i18nAttrElements = Array.from(document.querySelectorAll("[data-i18n-attr]"));
-const staffWrapper = document.getElementById("staff");
+const staffAscWrapper = document.getElementById("staffAsc");
+const staffDescWrapper = document.getElementById("staffDesc");
 
 const baseFrequencies = {
   C: 261.63,
@@ -193,9 +196,12 @@ let tetrachords = [];
 let pentachords = [];
 let scales = [];
 let currentNotes = [];
+let currentAscNotes = [];
+let currentDescNotes = [];
 let currentLang = "el";
 let currentMode = "tetrachord";
 let currentGroupLabels = null;
+let currentDescGroupLabels = null;
 const baseRoot = "D";
 const sampleUrls = {
   C3: "https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts@master/FluidR3_GM/acoustic_grand_piano-mp3/C3.mp3",
@@ -362,6 +368,40 @@ function buildScaleNotes(scaleCombo) {
   };
 }
 
+function buildDescendingScaleNotes(scaleCombo) {
+  if (!scaleCombo?.descending?.first || !scaleCombo?.descending?.second) {
+    return null;
+  }
+  const upperList =
+    scaleCombo.descending.first.type === "pentachord" ? pentachords : tetrachords;
+  const lowerList =
+    scaleCombo.descending.second.type === "pentachord" ? pentachords : tetrachords;
+  const upperChord = findChordByName(upperList, scaleCombo.descending.first.name);
+  const lowerChord = findChordByName(lowerList, scaleCombo.descending.second.name);
+  if (!upperChord || !lowerChord) {
+    return null;
+  }
+  const lowerAsc = buildNotesFromIntervals(lowerChord.intervals, baseRoot);
+  if (!lowerAsc.length) {
+    return null;
+  }
+  const sharedRoot = lowerAsc[lowerAsc.length - 1];
+  const upperAsc = buildNotesFromIntervals(upperChord.intervals, sharedRoot);
+  if (!upperAsc.length) {
+    return null;
+  }
+  const upperDesc = upperAsc.slice().reverse();
+  const lowerDesc = lowerAsc.slice().reverse();
+  const combined = [...upperDesc, ...lowerDesc.slice(1)];
+  return {
+    notes: combined,
+    groupLabels: {
+      labels: { first: upperChord.name, second: lowerChord.name },
+      groupLength: upperDesc.length
+    }
+  };
+}
+
 
 const semitoneToNote = {
   0: "C",
@@ -426,17 +466,17 @@ function createStaveNotes(notes) {
   });
 }
 
-function renderStaff(notes, groupLabels = null, groupLength = null) {
-  if (!staffWrapper) {
+function renderStaff(wrapper, notes, groupLabels = null, groupLength = null) {
+  if (!wrapper) {
     return null;
   }
-  staffWrapper.innerHTML = "";
+  wrapper.innerHTML = "";
 
   if (!notes || notes.length === 0) {
     return null;
   }
 
-  const renderer = new Renderer(staffWrapper, Renderer.Backends.SVG);
+  const renderer = new Renderer(wrapper, Renderer.Backends.SVG);
   renderer.resize(760, 230);
   const context = renderer.getContext();
 
@@ -462,9 +502,10 @@ function renderStaff(notes, groupLabels = null, groupLength = null) {
   context.setFillStyle("#111827");
   context.setStrokeStyle("#1f2933");
 
-  const svg = staffWrapper.querySelector("svg");
+  const svg = wrapper.querySelector("svg");
   if (svg) {
-    svg.setAttribute("aria-label", translations[currentLang]?.["aria.staff"] || "Notes on the staff");
+    const staffLabel = wrapper.dataset.role === "desc" ? "aria.staff.desc" : "aria.staff.asc";
+    svg.setAttribute("aria-label", translations[currentLang]?.[staffLabel] || "Notes on the staff");
   }
 
   return { stave, mainVoice, context };
@@ -563,10 +604,19 @@ function renderIntervals(notes, metrics) {
 
 function updatePentagram(notes) {
   if (currentMode === "scale" && currentGroupLabels) {
-    renderStaff(notes, currentGroupLabels.labels, currentGroupLabels.groupLength);
+    renderStaff(staffAscWrapper, currentAscNotes, currentGroupLabels.labels, currentGroupLabels.groupLength);
+    renderStaff(
+      staffDescWrapper,
+      currentDescNotes,
+      currentDescGroupLabels?.labels,
+      currentDescGroupLabels?.groupLength
+    );
     return;
   }
-  renderStaff(notes);
+  renderStaff(staffAscWrapper, notes);
+  if (staffDescWrapper) {
+    staffDescWrapper.innerHTML = "";
+  }
 }
 
 function setLoadError(hasError) {
@@ -584,7 +634,10 @@ function updateSequence() {
   const scales = getCurrentScales();
   if (!scales.length) {
     currentNotes = [];
+    currentAscNotes = [];
+    currentDescNotes = [];
     currentGroupLabels = null;
+    currentDescGroupLabels = null;
     setKeyHighlights(currentNotes);
     updatePentagram(currentNotes);
     return;
@@ -598,15 +651,32 @@ function updateSequence() {
     if (!built) {
       return;
     }
-    currentNotes = built.notes;
+    currentAscNotes = built.notes;
     currentGroupLabels = built.groupLabels;
+    if (selected.descending) {
+      const descending = buildDescendingScaleNotes(selected);
+      if (descending) {
+        currentDescNotes = descending.notes;
+        currentDescGroupLabels = descending.groupLabels;
+      } else {
+        currentDescNotes = built.notes.slice().reverse();
+        currentDescGroupLabels = currentGroupLabels;
+      }
+    } else {
+      currentDescNotes = built.notes.slice().reverse();
+      currentDescGroupLabels = currentGroupLabels;
+    }
+    currentNotes = currentAscNotes;
   } else {
     const notes = buildNotesFromIntervals(selected.intervals, baseRoot);
     if (!notes.length) {
       return;
     }
     currentNotes = notes;
+    currentAscNotes = notes;
+    currentDescNotes = notes.slice().reverse();
     currentGroupLabels = null;
+    currentDescGroupLabels = null;
   }
   setKeyHighlights(currentNotes);
   updatePentagram(currentNotes);
@@ -752,7 +822,10 @@ async function playSequence() {
     masterGain.connect(audioContext.destination);
   }
   await loadSamples();
-  const noteSequence = [...currentNotes, ...currentNotes.slice(0, -1).reverse()];
+  const noteSequence =
+    currentMode === "scale"
+      ? [...currentAscNotes, ...currentDescNotes.slice(1)]
+      : [...currentNotes, ...currentNotes.slice(0, -1).reverse()];
   const now = audioContext.currentTime + 0.05;
   noteSequence.forEach((note, index) => {
     const baseNote = enharmonicAliases[note] || note;

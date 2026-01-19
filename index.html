@@ -255,6 +255,13 @@
       display: block;
     }
 
+    .staff-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+    }
+
     .staff {
       width: 760px;
       max-width: 100%;
@@ -409,7 +416,10 @@
     <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
 
     <div class="clef-wrapper">
-      <div id="staff" class="staff" aria-label="Νότες στο πεντάγραμμο" data-i18n-attr="aria-label:aria.staff"></div>
+      <div class="staff-stack">
+      <div id="staffAsc" class="staff" data-role="asc" aria-label="Νότες στο πεντάγραμμο (Άνοδος)" data-i18n-attr="aria-label:aria.staff.asc"></div>
+      <div id="staffDesc" class="staff" data-role="desc" aria-label="Νότες στο πεντάγραμμο (Κάθοδος)" data-i18n-attr="aria-label:aria.staff.desc"></div>
+    </div>
       <div class="play-row">
         <button class="play-button" id="playButton" type="button" data-i18n="button.play">▶︎</button>
       </div>

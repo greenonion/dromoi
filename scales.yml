@@ -5,3 +5,17 @@
   second:
     name: Ράστ
     type: tetrachord
+- name: Ράστ
+  first:
+    name: Ράστ
+    type: pentachord
+  second:
+    name: Ράστ
+    type: tetrachord
+  descending:
+    first:
+      name: Μινόρε
+      type: tetrachord
+    second:
+      name: Ράστ
+      type: pentachord

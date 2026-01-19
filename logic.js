@@ -52,6 +52,7 @@ export function parseScaleCombosYaml(text) {
   const items = [];
   let current = null;
   let currentPart = null;
+  let currentSection = "asc";
   lines.forEach((line) => {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) {
@@ -61,8 +62,9 @@ export function parseScaleCombosYaml(text) {
       if (current) {
         items.push(current);
       }
-      current = { name: "", first: null, second: null };
+      current = { name: "", first: null, second: null, descending: null };
       currentPart = null;
+      currentSection = "asc";
       const nameMatch = trimmed.match(/-\s*name:\s*(.+)/);
       if (nameMatch) {
         current.name = nameMatch[1].trim();
@@ -70,6 +72,12 @@ export function parseScaleCombosYaml(text) {
       return;
     }
     if (!current) {
+      return;
+    }
+    if (trimmed.startsWith("descending:")) {
+      current.descending = { first: null, second: null };
+      currentSection = "desc";
+      currentPart = null;
       return;
     }
     if (trimmed.startsWith("name:") && currentPart) {
@@ -81,20 +89,22 @@ export function parseScaleCombosYaml(text) {
       return;
     }
     if (trimmed.startsWith("first:")) {
-      current.first = { name: "", type: "" };
-      currentPart = current.first;
+      const target = currentSection === "desc" ? current.descending : current;
+      target.first = { name: "", type: "" };
+      currentPart = target.first;
       const remainder = trimmed.replace("first:", "").trim();
       if (remainder) {
-        current.first.name = remainder;
+        target.first.name = remainder;
       }
       return;
     }
     if (trimmed.startsWith("second:")) {
-      current.second = { name: "", type: "" };
-      currentPart = current.second;
+      const target = currentSection === "desc" ? current.descending : current;
+      target.second = { name: "", type: "" };
+      currentPart = target.second;
       const remainder = trimmed.replace("second:", "").trim();
       if (remainder) {
-        current.second.name = remainder;
+        target.second.name = remainder;
       }
       return;
     }
