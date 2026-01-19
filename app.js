@@ -452,7 +452,9 @@ function renderStaff(notes, groupLabels = null, groupLength = null) {
   new Formatter().joinVoices([mainVoice]).formatToStave([mainVoice], stave);
   mainVoice.draw(context, stave);
 
-  renderIntervals(notes, { stave, mainVoice, context });
+  if (!groupLabels || !Number.isInteger(groupLength)) {
+    renderIntervals(notes, { stave, mainVoice, context });
+  }
   if (groupLabels && Number.isInteger(groupLength)) {
     renderGroupLabels(groupLabels, groupLength, { mainVoice, context });
   }
@@ -475,13 +477,16 @@ function renderGroupLabels(groupLabels, groupLength, metrics) {
     return;
   }
   const groupIndex = Math.max(0, groupLength - 1);
+  const firstTickable = tickables[0];
   const boundaryTickable = tickables[groupIndex];
   const lastTickable = tickables[tickables.length - 1];
+  const firstContext = firstTickable?.getTickContext?.();
   const boundaryContext = boundaryTickable?.getTickContext?.();
   const lastContext = lastTickable?.getTickContext?.();
+  const firstX = firstContext?.getX?.();
   const boundaryX = boundaryContext?.getX?.();
   const lastX = lastContext?.getX?.();
-  if (!Number.isFinite(boundaryX) || !Number.isFinite(lastX)) {
+  if (!Number.isFinite(firstX) || !Number.isFinite(boundaryX) || !Number.isFinite(lastX)) {
     return;
   }
   const firstLabel = groupLabels.first || "";
@@ -493,17 +498,33 @@ function renderGroupLabels(groupLabels, groupLength, metrics) {
   context.save();
   context.setFont("14px Georgia, Times New Roman, serif", "");
   context.setFillStyle("#1f2933");
+  context.setStrokeStyle("#1f2933");
+  context.setLineWidth(1.2);
 
-  const labelOffset = 18;
-  const baseOffset = 42;
-  const firstX = boundaryX + baseOffset;
-  const secondX = (boundaryX + lastX) / 2 + baseOffset;
+  const labelOffset = 16;
+  const lineGap = 6;
+  const lineYTop = 44 - labelOffset + lineGap;
+  const lineYBottom = 44 + 108 - lineGap;
+  const firstLineStart = firstX + 80;
+  const firstLineEnd = boundaryX + 96;
+  const secondLineStart = boundaryX + 88;
+  const secondLineEnd = lastX + 88;
 
   if (firstLabel) {
-    context.fillText(firstLabel, firstX - firstLabel.length * 3.6, 44 - labelOffset);
+    const labelX = firstLineStart + 6;
+    context.fillText(firstLabel, labelX, lineYTop - 8);
+    context.beginPath();
+    context.moveTo(firstLineStart, lineYTop);
+    context.lineTo(firstLineEnd, lineYTop);
+    context.stroke();
   }
   if (secondLabel) {
-    context.fillText(secondLabel, secondX - secondLabel.length * 3.6, 44 + 74);
+    const labelX = secondLineStart + 6;
+    context.fillText(secondLabel, labelX, lineYBottom + 16);
+    context.beginPath();
+    context.moveTo(secondLineStart, lineYBottom);
+    context.lineTo(secondLineEnd, lineYBottom);
+    context.stroke();
   }
   context.restore();
 }
@@ -515,8 +536,8 @@ function renderIntervals(notes, metrics) {
   const { mainVoice, context } = metrics;
   const tickables = mainVoice.getTickables();
   const labels = intervalLabelsByLang[currentLang] || intervalLabelsByLang.el;
-  const intervalY = 190;
-  const intervalYOffset = -36;
+  const intervalY = 204;
+  const intervalYOffset = -32;
   const intervalXOffset = 90;
   context.save();
   context.setFont("14px Georgia, Times New Roman, serif", "");
