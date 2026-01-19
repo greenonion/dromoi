@@ -47,6 +47,54 @@ export function parseIntervalsYaml(text) {
   return parseSimpleIntervalsYaml(text);
 }
 
+export function parseScaleSongsYaml(text) {
+  const lines = text.split(/\r?\n/);
+  const items = [];
+  let current = null;
+  let currentSong = null;
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      return;
+    }
+    if (trimmed.startsWith("- scale:")) {
+      if (current) {
+        items.push(current);
+      }
+      current = { scale: trimmed.replace("- scale:", "").trim(), songs: [] };
+      currentSong = null;
+      return;
+    }
+    if (!current) {
+      return;
+    }
+    if (trimmed.startsWith("- title:")) {
+      currentSong = { title: trimmed.replace("- title:", "").trim() };
+      current.songs.push(currentSong);
+      return;
+    }
+    if (!currentSong) {
+      return;
+    }
+    if (trimmed.startsWith("link:")) {
+      currentSong.link = trimmed.replace("link:", "").trim();
+      return;
+    }
+    if (trimmed.startsWith("creators:")) {
+      currentSong.creators = trimmed.replace("creators:", "").trim();
+      return;
+    }
+    if (trimmed.startsWith("singers:")) {
+      currentSong.singers = trimmed.replace("singers:", "").trim();
+      return;
+    }
+  });
+  if (current) {
+    items.push(current);
+  }
+  return items;
+}
+
 export function parseScaleCombosYaml(text) {
   const lines = text.split(/\r?\n/);
   const items = [];

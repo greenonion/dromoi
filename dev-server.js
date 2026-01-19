@@ -10,9 +10,11 @@ const distRoot = join(root, "dist");
 const tetrachordsSource = join(root, "tetrachords.yml");
 const pentachordsSource = join(root, "pentachords.yml");
 const scalesSource = join(root, "scales.yml");
+const scaleSongsSource = join(root, "scale-songs.yml");
 const tetrachordsDest = join(distRoot, "tetrachords.yml");
 const pentachordsDest = join(distRoot, "pentachords.yml");
 const scalesDest = join(distRoot, "scales.yml");
+const scaleSongsDest = join(distRoot, "scale-songs.yml");
 
 const contentTypes = {
   ".css": "text/css",
@@ -36,6 +38,7 @@ async function copyScaleAssets() {
   await copyScaleFile(tetrachordsSource, tetrachordsDest, "tetrachords.yml");
   await copyScaleFile(pentachordsSource, pentachordsDest, "pentachords.yml");
   await copyScaleFile(scalesSource, scalesDest, "scales.yml");
+  await copyScaleFile(scaleSongsSource, scaleSongsDest, "scale-songs.yml");
 }
 
 const buildProcess = Bun.spawn(
@@ -57,10 +60,15 @@ const scalesWatcher = watch(scalesSource, { persistent: true }, () => {
   copyScaleAssets();
 });
 
+const scaleSongsWatcher = watch(scaleSongsSource, { persistent: true }, () => {
+  copyScaleAssets();
+});
+
 process.on("SIGINT", () => {
   tetrachordsWatcher.close();
   pentachordsWatcher.close();
   scalesWatcher.close();
+  scaleSongsWatcher.close();
   buildProcess.kill();
   process.exit(0);
 });

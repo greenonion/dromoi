@@ -91,6 +91,7 @@ function setupDom() {
       <div id="staffAsc" class="staff" data-role="asc"></div>
       <div id="staffDesc" class="staff" data-role="desc"></div>
     </div>
+    <div id="songPanel"></div>
   `;
     window.fetch = (url) => {
       if (url.includes("tetrachords.yml")) {
@@ -105,6 +106,15 @@ function setupDom() {
         text: () =>
           Promise.resolve(
             "- name: Major\n  first:\n    name: Ράστ\n    type: pentachord\n  second:\n    name: Ράστ\n    type: tetrachord\n- name: Ράστ\n  first:\n    name: Ράστ\n    type: pentachord\n  second:\n    name: Ράστ\n    type: tetrachord\n  descending:\n    first:\n      name: Μινόρε\n      type: tetrachord\n    second:\n      name: Ράστ\n      type: pentachord\n"
+          )
+      });
+    }
+    if (url.includes("scale-songs.yml")) {
+      return Promise.resolve({
+        ok: true,
+        text: () =>
+          Promise.resolve(
+            "- scale: Ράστ\n  songs:\n    - title: Μαρίκα χασικλού\n      link: https://www.youtube.com/watch?v=ymfyhZMLics\n      creators: Βαγγέλης Παπάζογλου\n      singers: Κώστας Ρούκουνας\n"
           )
       });
     }

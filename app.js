@@ -3,7 +3,8 @@ import {
   normalizeNote,
   noteToSemitone,
   parseIntervalsYaml,
-  parseScaleCombosYaml
+  parseScaleCombosYaml,
+  parseScaleSongsYaml
 } from "./logic.js";
 import VexFlow from "vexflow";
 
@@ -70,6 +71,7 @@ const i18nElements = Array.from(document.querySelectorAll("[data-i18n]"));
 const i18nAttrElements = Array.from(document.querySelectorAll("[data-i18n-attr]"));
 const staffAscWrapper = document.getElementById("staffAsc");
 const staffDescWrapper = document.getElementById("staffDesc");
+const songPanel = document.getElementById("songPanel");
 
 const baseFrequencies = {
   C: 261.63,
@@ -202,6 +204,7 @@ let currentLang = "el";
 let currentMode = "tetrachord";
 let currentGroupLabels = null;
 let currentDescGroupLabels = null;
+let scaleSongs = [];
 const baseRoot = "D";
 const sampleUrls = {
   C3: "https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts@master/FluidR3_GM/acoustic_grand_piano-mp3/C3.mp3",
@@ -680,9 +683,42 @@ function updateSequence() {
   }
   setKeyHighlights(currentNotes);
   updatePentagram(currentNotes);
+  updateSongPanel(selected);
   if (typeof window !== "undefined") {
     window.__currentNotes = currentNotes;
   }
+}
+
+function updateSongPanel(selected) {
+  if (!songPanel) {
+    return;
+  }
+  if (currentMode !== "scale" || !selected?.name) {
+    songPanel.classList.remove("active");
+    songPanel.innerHTML = "";
+    return;
+  }
+  const match = scaleSongs.find((entry) => entry.scale === selected.name);
+  if (!match || !match.songs?.length) {
+    songPanel.classList.remove("active");
+    songPanel.innerHTML = "";
+    return;
+  }
+  songPanel.classList.add("active");
+  const header = "<div class=\"song-header\">Τραγούδια</div>";
+  const items = match.songs
+    .map((song) => {
+      const creators = song.creators ? `Δημιουργός: ${song.creators}` : "";
+      const singers = song.singers ? `Ερμηνευτές: ${song.singers}` : "";
+      const metaParts = [creators, singers].filter(Boolean).join(" · ");
+      const meta = metaParts ? `<div class=\"song-meta\">${metaParts}</div>` : "";
+      return `<div>
+        <a href=\"${song.link}\" target=\"_blank\" rel=\"noopener\">${song.title}</a>
+        ${meta}
+      </div>`;
+    })
+    .join("");
+  songPanel.innerHTML = `${header}${items}`;
 }
 
 function playTone(freq, startTime, duration) {
@@ -880,8 +916,22 @@ async function loadScaleCombos() {
   }
 }
 
+async function loadScaleSongs() {
+  try {
+    const response = await fetch("scale-songs.yml");
+    if (!response.ok) {
+      throw new Error(`Failed to load scale songs: ${response.status}`);
+    }
+    const text = await response.text();
+    scaleSongs = parseScaleSongsYaml(text);
+  } catch (error) {
+    console.warn("Scale songs load failed", error);
+    scaleSongs = [];
+  }
+}
+
 async function loadScales() {
-  await Promise.all([loadTetrachords(), loadPentachords(), loadScaleCombos()]);
+  await Promise.all([loadTetrachords(), loadPentachords(), loadScaleCombos(), loadScaleSongs()]);
   buildDropdown();
   if (!tetrachords.length && !pentachords.length && !scales.length) {
     setLoadError(true);
