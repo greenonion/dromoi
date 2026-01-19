@@ -511,7 +511,8 @@ function renderGroupLabels(groupLabels, groupLength, metrics) {
   const secondLineEnd = lastX + 88;
 
   if (firstLabel) {
-    const labelX = firstLineStart + 6;
+    const labelWidth = context.measureText(firstLabel).width;
+    const labelX = firstLineStart + (firstLineEnd - firstLineStart - labelWidth) / 2;
     context.fillText(firstLabel, labelX, lineYTop - 8);
     context.beginPath();
     context.moveTo(firstLineStart, lineYTop);
@@ -519,7 +520,8 @@ function renderGroupLabels(groupLabels, groupLength, metrics) {
     context.stroke();
   }
   if (secondLabel) {
-    const labelX = secondLineStart + 6;
+    const labelWidth = context.measureText(secondLabel).width;
+    const labelX = secondLineStart + (secondLineEnd - secondLineStart - labelWidth) / 2;
     context.fillText(secondLabel, labelX, lineYBottom + 16);
     context.beginPath();
     context.moveTo(secondLineStart, lineYBottom);
