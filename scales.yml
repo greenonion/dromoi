@@ -5,6 +5,13 @@
   second:
     name: Ράστ
     type: tetrachord
+  descending:
+    first:
+      name: Ράστ
+      type: tetrachord
+    second:
+      name: Ράστ
+      type: pentachord
 - name: Ράστ
   first:
     name: Ράστ
