@@ -76,17 +76,20 @@ const baseFrequencies = {
   Eb: 311.13,
   E: 329.63,
   F: 349.23,
+  "F#": 369.99,
   Gb: 369.99,
   G: 392.0,
   "G#": 415.3,
   Ab: 415.3,
   A: 440.0,
+  "A#": 466.16,
   Bb: 466.16,
   B: 493.88,
   C5: 523.25,
   "C#5": 554.37,
   Db5: 554.37,
   D5: 587.33,
+  "D#5": 622.25,
   Eb5: 622.25,
   E5: 659.25,
   F5: 698.46,
@@ -96,56 +99,61 @@ const baseFrequencies = {
   "G#5": 830.61,
   Ab5: 830.61,
   A5: 880.0,
+  "A#5": 932.33,
   Bb5: 932.33,
   B5: 987.77
 };
 
 const enharmonicAliases = {
-  "C#": "Db",
-  "C#5": "Db5",
-  "D#": "Eb",
-  "D#5": "Eb5",
-  "F#": "Gb",
-  "F#5": "Gb5",
+  Db: "C#",
+  Db5: "C#5",
+  Eb: "D#",
+  Eb5: "D#5",
+  Gb: "F#",
+  Gb5: "F#5",
+  Ab: "G#",
+  Ab5: "G#5",
+  Bb: "A#",
+  Bb5: "A#5",
   "E#": "F",
-  "E#5": "F5",
-  "G#": "Ab",
-  "G#5": "Ab5",
-  "A#": "Bb",
-  "A#5": "Bb5"
+  "E#5": "F5"
 };
 
 const noteLabels = {
   C: "C",
   "C#": "C♯",
-  Db: "D♭",
+  Db: "C♯",
   D: "D",
-  Eb: "E♭",
+  "D#": "D♯",
+  Eb: "D♯",
   E: "E",
   F: "F",
   "F#": "F♯",
-  Gb: "G♭",
+  Gb: "F♯",
   G: "G",
   "G#": "G♯",
-  Ab: "A♭",
+  Ab: "G♯",
   A: "A",
-  Bb: "B♭",
+  "A#": "A♯",
+  Bb: "A♯",
   B: "B",
   "E#": "E♯",
   C5: "C",
   "C#5": "C♯",
-  Db5: "D♭",
+  Db5: "C♯",
   D5: "D",
-  Eb5: "E♭",
+  "D#5": "D♯",
+  Eb5: "D♯",
   E5: "E",
   F5: "F",
   "F#5": "F♯",
-  Gb5: "G♭",
+  Gb5: "F♯",
   G5: "G",
   "G#5": "G♯",
-  Ab5: "A♭",
+  Ab5: "G♯",
   A5: "A",
-  Bb5: "B♭",
+  "A#5": "A♯",
+  Bb5: "A♯",
   B5: "B"
 };
 
@@ -375,7 +383,7 @@ function setKeyHighlights(notes) {
     const keyNote = key.dataset.note;
     const shouldHighlight = notes.some((note) => {
       const normalized = enharmonicAliases[note] || note;
-      return normalized === keyNote || (keyNote === "C5" && normalized === "C");
+      return normalized === keyNote;
     });
     key.classList.toggle("blue", shouldHighlight);
   });

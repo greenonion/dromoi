@@ -54,7 +54,7 @@ function setupDom() {
     <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
     <button class="play-button" id="playButton" type="button">▶︎</button>
     <div class="keys-frame">
-      <svg width="720" height="120" viewBox="0 0 720 120">
+      <svg width="810" height="120" viewBox="0 0 810 120">
         <rect class="white-key" data-note="C" x="0" y="0" width="90" height="120" rx="10"></rect>
         <rect class="white-key" data-note="D" x="90" y="0" width="90" height="120" rx="10"></rect>
         <rect class="white-key" data-note="E" x="180" y="0" width="90" height="120" rx="10"></rect>
@@ -63,11 +63,13 @@ function setupDom() {
         <rect class="white-key" data-note="A" x="450" y="0" width="90" height="120" rx="10"></rect>
         <rect class="white-key" data-note="B" x="540" y="0" width="90" height="120" rx="10"></rect>
         <rect class="white-key" data-note="C5" x="630" y="0" width="90" height="120" rx="10"></rect>
-        <rect class="black-key" data-note="Db" x="62" y="0" width="56" height="70" rx="6"></rect>
-        <rect class="black-key" data-note="Eb" x="152" y="0" width="56" height="70" rx="6"></rect>
-        <rect class="black-key" data-note="Gb" x="332" y="0" width="56" height="70" rx="6"></rect>
-        <rect class="black-key" data-note="Ab" x="422" y="0" width="56" height="70" rx="6"></rect>
-        <rect class="black-key" data-note="Bb" x="512" y="0" width="56" height="70" rx="6"></rect>
+        <rect class="white-key" data-note="D5" x="720" y="0" width="90" height="120" rx="10"></rect>
+        <rect class="black-key" data-note="C#" x="62" y="0" width="56" height="70" rx="6"></rect>
+        <rect class="black-key" data-note="D#" x="152" y="0" width="56" height="70" rx="6"></rect>
+        <rect class="black-key" data-note="F#" x="332" y="0" width="56" height="70" rx="6"></rect>
+        <rect class="black-key" data-note="G#" x="422" y="0" width="56" height="70" rx="6"></rect>
+        <rect class="black-key" data-note="A#" x="512" y="0" width="56" height="70" rx="6"></rect>
+        <rect class="black-key" data-note="C#5" x="692" y="0" width="56" height="70" rx="6"></rect>
         <text class="key-label" x="38" y="102">C</text>
         <text class="key-label" x="128" y="102">D</text>
         <text class="key-label" x="218" y="102">E</text>
@@ -76,6 +78,13 @@ function setupDom() {
         <text class="key-label" x="488" y="102">A</text>
         <text class="key-label" x="578" y="102">B</text>
         <text class="key-label" x="668" y="102">C</text>
+        <text class="key-label" x="758" y="102">D</text>
+        <text class="key-label black" x="90" y="52">C♯</text>
+        <text class="key-label black" x="180" y="52">D♯</text>
+        <text class="key-label black" x="360" y="52">F♯</text>
+        <text class="key-label black" x="450" y="52">G♯</text>
+        <text class="key-label black" x="540" y="52">A♯</text>
+        <text class="key-label black" x="720" y="52">C♯</text>
       </svg>
     </div>
     <div id="staff" class="staff"></div>
@@ -247,6 +256,14 @@ describe("staff rendering", () => {
       throw new Error(`No notes rendered. SVG: ${staffSvg.outerHTML}`);
     }
     expect(window.__currentNotes.join(",")).toBe("D,E,F#,G,A,B,C#5,D5");
+    const activeKeys = Array.from(document.querySelectorAll(".white-key.blue, .black-key.blue")).map(
+      (key) => key.dataset.note
+    );
+    expect(activeKeys).toContain("C#5");
+    expect(activeKeys).toContain("D5");
+    const blackLabelNodes = staffSvg.querySelectorAll(".key-label.black");
+    const blackLabels = Array.from(blackLabelNodes).map((node) => node.textContent.trim());
+    expect(blackLabels).not.toContain("C♯");
     const labelNodes = staffSvg.querySelectorAll("text");
     const labels = Array.from(labelNodes).map((node) => node.textContent);
     const rastCount = labels.filter((label) => label === "Ράστ").length;
