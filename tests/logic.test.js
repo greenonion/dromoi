@@ -1,5 +1,10 @@
 import { describe, expect, test, beforeEach } from "bun:test";
-import { intervalInSemitones, parseIntervalsYaml, parseScaleCombosYaml } from "../logic.js";
+import {
+  buildNotesFromIntervals,
+  intervalInSemitones,
+  parseIntervalsYaml,
+  parseScaleCombosYaml
+} from "../logic.js";
 import { Window } from "happy-dom";
 
 function setupDom() {
@@ -159,6 +164,17 @@ describe("intervalInSemitones", () => {
   });
 });
 
+describe("buildNotesFromIntervals", () => {
+  test("builds ascending D major scale", () => {
+    const pentachord = [2, 2, 1, 2];
+    const tetrachord = [2, 2, 1];
+    const firstNotes = buildNotesFromIntervals(pentachord, "D", { "F#": "F#" });
+    const secondNotes = buildNotesFromIntervals(tetrachord, "A", { "F#": "F#" });
+    const combined = [...firstNotes, ...secondNotes.slice(1)];
+    expect(combined.join(",")).toBe("D,E,F#,G,A,B,C#5,D5");
+  });
+});
+
 describe("parseScaleCombosYaml", () => {
   test("parses scale combos", () => {
     const yamlText = `- name: Major
@@ -230,7 +246,7 @@ describe("staff rendering", () => {
     if (stavenotes.length === 0 && noteheads.length === 0) {
       throw new Error(`No notes rendered. SVG: ${staffSvg.outerHTML}`);
     }
-    expect(noteheads.length || stavenotes.length).toBe(8);
+    expect(window.__currentNotes.join(",")).toBe("D,E,F#,G,A,B,C#5,D5");
     const labelNodes = staffSvg.querySelectorAll("text");
     const labels = Array.from(labelNodes).map((node) => node.textContent);
     const rastCount = labels.filter((label) => label === "Ράστ").length;

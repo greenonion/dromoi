@@ -111,6 +111,56 @@ export function parseScaleCombosYaml(text) {
   return items.filter((item) => item.name);
 }
 
+export function buildNotesFromIntervals(intervals, startNote, enharmonicAliases = {}) {
+  if (!intervals?.length || !startNote) {
+    return [];
+  }
+  const startIndex = noteIndexFromNote(startNote, enharmonicAliases);
+  if (startIndex == null) {
+    return [];
+  }
+  const steps = [startIndex];
+  intervals.forEach((interval) => {
+    const last = steps[steps.length - 1];
+    steps.push(last + interval);
+  });
+  return steps.map((step) => {
+    const semitone = ((step % 12) + 12) % 12;
+    const base = semitoneToNote[semitone] || "C";
+    return step >= 12 ? `${base}5` : base;
+  });
+}
+
+function noteIndexFromNote(note, enharmonicAliases) {
+  if (!note) {
+    return null;
+  }
+  const normalized = normalizeNote(note, enharmonicAliases);
+  const baseStep = noteToSemitone[normalized];
+  if (baseStep == null) {
+    return null;
+  }
+  if (note === "C5") {
+    return baseStep + 12;
+  }
+  return baseStep;
+}
+
+const semitoneToNote = {
+  0: "C",
+  1: "C#",
+  2: "D",
+  3: "Eb",
+  4: "E",
+  5: "F",
+  6: "F#",
+  7: "G",
+  8: "Ab",
+  9: "A",
+  10: "Bb",
+  11: "B"
+};
+
 function parseSimpleNotesYaml(text) {
   const lines = text.split(/\r?\n/);
   const items = [];

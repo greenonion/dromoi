@@ -1,4 +1,10 @@
-import { intervalInSemitones, noteToSemitone, parseIntervalsYaml, parseScaleCombosYaml } from "./logic.js";
+import {
+  intervalInSemitones,
+  normalizeNote,
+  noteToSemitone,
+  parseIntervalsYaml,
+  parseScaleCombosYaml
+} from "./logic.js";
 import VexFlow from "vexflow";
 
 const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } = VexFlow;
@@ -64,6 +70,7 @@ const staffWrapper = document.getElementById("staff");
 
 const baseFrequencies = {
   C: 261.63,
+  "C#": 277.18,
   Db: 277.18,
   D: 293.66,
   Eb: 311.13,
@@ -76,17 +83,41 @@ const baseFrequencies = {
   A: 440.0,
   Bb: 466.16,
   B: 493.88,
-  C5: 523.25
+  C5: 523.25,
+  "C#5": 554.37,
+  Db5: 554.37,
+  D5: 587.33,
+  Eb5: 622.25,
+  E5: 659.25,
+  F5: 698.46,
+  "F#5": 739.99,
+  Gb5: 739.99,
+  G5: 783.99,
+  "G#5": 830.61,
+  Ab5: 830.61,
+  A5: 880.0,
+  Bb5: 932.33,
+  B5: 987.77
 };
 
 const enharmonicAliases = {
+  "C#": "Db",
+  "C#5": "Db5",
+  "D#": "Eb",
+  "D#5": "Eb5",
   "F#": "Gb",
+  "F#5": "Gb5",
   "E#": "F",
-  "G#": "Ab"
+  "E#5": "F5",
+  "G#": "Ab",
+  "G#5": "Ab5",
+  "A#": "Bb",
+  "A#5": "Bb5"
 };
 
 const noteLabels = {
   C: "C",
+  "C#": "C♯",
   Db: "D♭",
   D: "D",
   Eb: "E♭",
@@ -101,18 +132,46 @@ const noteLabels = {
   Bb: "B♭",
   B: "B",
   "E#": "E♯",
-  C5: "C"
+  C5: "C",
+  "C#5": "C♯",
+  Db5: "D♭",
+  D5: "D",
+  Eb5: "E♭",
+  E5: "E",
+  F5: "F",
+  "F#5": "F♯",
+  Gb5: "G♭",
+  G5: "G",
+  "G#5": "G♯",
+  Ab5: "A♭",
+  A5: "A",
+  Bb5: "B♭",
+  B5: "B"
 };
 
 const accidentals = {
   Db: "b",
+  Db5: "b",
   Eb: "b",
+  Eb5: "b",
   Gb: "b",
+  Gb5: "b",
   Ab: "b",
+  Ab5: "b",
   Bb: "b",
+  Bb5: "b",
   "F#": "#",
+  "F#5": "#",
   "G#": "#",
-  "E#": "#"
+  "G#5": "#",
+  "E#": "#",
+  "E#5": "#",
+  "C#": "#",
+  "C#5": "#",
+  "D#": "#",
+  "D#5": "#",
+  "A#": "#",
+  "A#5": "#"
 };
 
 const tempoBpm = 110;
@@ -233,6 +292,38 @@ function findChordByName(chordList, name) {
   return chordList.find((item) => item.name === name) || null;
 }
 
+function buildNoteIndexFromNote(note) {
+  if (!note) {
+    return null;
+  }
+  const normalized = normalizeNote(note, enharmonicAliases);
+  const baseStep = noteToSemitone[normalized];
+  if (baseStep == null) {
+    return null;
+  }
+  return baseStep;
+}
+
+function buildNotesFromIntervals(intervals, startNote) {
+  if (!intervals?.length || !startNote) {
+    return [];
+  }
+  const startIndex = buildNoteIndexFromNote(startNote);
+  if (startIndex == null) {
+    return [];
+  }
+  const steps = [startIndex];
+  intervals.forEach((interval) => {
+    const last = steps[steps.length - 1];
+    steps.push(last + interval);
+  });
+  return steps.map((step) => {
+    const semitone = ((step % 12) + 12) % 12;
+    const base = semitoneToNote[semitone] || "C";
+    return step >= 12 ? `${base}5` : base;
+  });
+}
+
 function buildScaleNotes(scaleCombo) {
   if (!scaleCombo?.first || !scaleCombo?.second) {
     return null;
@@ -244,12 +335,12 @@ function buildScaleNotes(scaleCombo) {
   if (!firstChord || !secondChord) {
     return null;
   }
-  const firstNotes = notesFromIntervals(firstChord.intervals, baseRoot);
+  const firstNotes = buildNotesFromIntervals(firstChord.intervals, baseRoot);
   if (!firstNotes.length) {
     return null;
   }
   const secondRoot = firstNotes[firstNotes.length - 1];
-  const secondNotes = notesFromIntervals(secondChord.intervals, secondRoot);
+  const secondNotes = buildNotesFromIntervals(secondChord.intervals, secondRoot);
   if (!secondNotes.length) {
     return null;
   }
@@ -263,45 +354,6 @@ function buildScaleNotes(scaleCombo) {
   };
 }
 
-function notesFromIntervals(intervals, startNote) {
-  if (!intervals?.length) {
-    return [];
-  }
-  const startIndex = noteIndexFromNote(startNote);
-  if (startIndex == null) {
-    return [];
-  }
-  const steps = [startIndex];
-  intervals.forEach((interval) => {
-    const last = steps[steps.length - 1];
-    steps.push(last + interval);
-  });
-  return steps.map((step, index) => {
-    const octave = Math.floor(step / 12);
-    const semitone = ((step % 12) + 12) % 12;
-    const base = semitoneToNote[semitone] || "C";
-    if (octave <= 0) {
-      return base;
-    }
-    if (octave === 1 && base === "C") {
-      return "C5";
-    }
-    return base;
-  });
-}
-
-function noteIndexFromNote(note) {
-  if (!note) {
-    return null;
-  }
-  const base = enharmonicAliases[note] || note;
-  const isHighC = note === "C5";
-  const baseStep = noteToSemitone[base];
-  if (baseStep == null) {
-    return null;
-  }
-  return isHighC ? baseStep + 12 : baseStep;
-}
 
 const semitoneToNote = {
   0: "C",
@@ -339,16 +391,14 @@ function setKeyHighlights(notes) {
 }
 
 function toVexKey(note) {
-  if (note === "C5") {
-    return "c/5";
-  }
-  const match = note.match(/^([A-G])([b#]?)/);
+  const match = note.match(/^([A-G])([b#]?)(\d*)$/);
   if (!match) {
     return "c/4";
   }
   const letter = match[1].toLowerCase();
   const accidental = match[2] || "";
-  return `${letter}${accidental}/4`;
+  const octave = match[3] ? Number(match[3]) : 4;
+  return `${letter}${accidental}/${octave}`;
 }
 
 function createStaveNotes(notes) {
@@ -520,7 +570,7 @@ function updateSequence() {
     currentNotes = built.notes;
     currentGroupLabels = built.groupLabels;
   } else {
-    const notes = notesFromIntervals(selected.intervals, baseRoot);
+    const notes = buildNotesFromIntervals(selected.intervals, baseRoot);
     if (!notes.length) {
       return;
     }
@@ -529,6 +579,9 @@ function updateSequence() {
   }
   setKeyHighlights(currentNotes);
   updatePentagram(currentNotes);
+  if (typeof window !== "undefined") {
+    window.__currentNotes = currentNotes;
+  }
 }
 
 function playTone(freq, startTime, duration) {
